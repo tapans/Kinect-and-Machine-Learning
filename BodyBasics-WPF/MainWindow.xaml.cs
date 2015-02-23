@@ -155,6 +155,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         double[,] x_pos;
         double[,] y_pos;
         double[,] z_pos;
+        StreamWriter streamWriter;  // Output Stream Writer variable
 
         public bool ringing
         {
@@ -457,8 +458,11 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                             /**********************************************Training Stuff********************************************************************************/
                             if (body.HandRightState == HandState.Open)
                             {
-                                Console.WriteLine("setting frame counter");
-                                frameCounter=frameCounter == -1 ? 0 : frameCounter;
+                                if (frameCounter == -1)
+                                {
+                                    Console.WriteLine("setting frame counter");
+                                    frameCounter = 0;
+                                }                    
                             }
                             if (frameCounter >= 0)
                             {
@@ -468,7 +472,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                                     int columnIndex = frameCounter / num_frames;
                                     x_pos[rowIndex, columnIndex] = jointPoints[JointType.HandRight].X;
                                     y_pos[rowIndex, columnIndex] = jointPoints[JointType.HandRight].Y;
-                                    z_pos[rowIndex, columnIndex] = 1;
+                                    z_pos[rowIndex, columnIndex] = joints[JointType.HandRight].Position.Z;
                                     frameCounter++;
                                 }
                                 else
@@ -477,7 +481,12 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                                     print2DArray(x_pos);
                                     print2DArray(y_pos);
                                     print2DArray(z_pos);
+                                    /*                                   
+                                    print2DArray(x_pos, true, "circle_x.csv");
+                                    print2DArray(y_pos, true, "circle_y.csv");
+                                    print2DArray(z_pos, true, "circle_z.csv");
                                     frameCounter = -2; // done
+                                     */
                                 }
                             }
                             /**********************************************Training Stuff********************************************************************************/
@@ -499,23 +508,30 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             }
         }
 
-        private void print2DArray(double[,] pos)
+        private void print2DArray(double[,] pos, bool writeToFile = false, String fileName="")
         {
+            streamWriter = fileName != "" ? new StreamWriter("C:\\Users\\tapan\\Downloads\\gesture\\gesture\\data\\train\\" + fileName) : null;             
             for (int i = 0; i < pos.GetLength(0); i++)
             {
+                String line = "";
                 for (int j = 0; j < pos.GetLength(1); j++)
                 {
                     if (j < pos.GetLength(1) - 1)
                     {
-                        Console.Write(pos[i, j] + ",");
+                        line += pos[i, j].ToString() + ",";
                     }
                     else
                     {
-                        Console.Write(pos[i, j]);
+                        line += pos[i, j].ToString();
                     }
                 }
-                Console.WriteLine();
+                Console.WriteLine(line);
+                if (writeToFile == true)
+                {                    
+                    streamWriter.WriteLine(line);
+                }
             }
+            if (streamWriter != null) streamWriter.Close();
         }
 
 // **********************************************************************************************************
