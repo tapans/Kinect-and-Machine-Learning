@@ -151,7 +151,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         // Count # of frames arrived 
         int frameCounter = -1; //uninitialized. -2 state means done.
         int num_frames = 60; // # of frames to user per training data
-        int num_training_data = 1; // # of training data to record
+        int num_training_data = 20; // # of training data to record
         double[,] x_pos;
         double[,] y_pos;
         double[,] z_pos;
@@ -478,15 +478,16 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                                 else
                                 {
                                     //done training. show me the arrays
+                                    /*
                                     print2DArray(x_pos);
                                     print2DArray(y_pos);
                                     print2DArray(z_pos);
-                                    /*                                   
+                                    */                                   
                                     print2DArray(x_pos, true, "circle_x.csv");
                                     print2DArray(y_pos, true, "circle_y.csv");
                                     print2DArray(z_pos, true, "circle_z.csv");
                                     frameCounter = -2; // done
-                                     */
+                                     
                                 }
                             }
                             /**********************************************Training Stuff********************************************************************************/
