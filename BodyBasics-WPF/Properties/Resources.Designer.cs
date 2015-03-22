@@ -61,6 +61,15 @@ namespace Microsoft.Samples.Kinect.BodyBasics.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream clockBuzzer {
+            get {
+                return ResourceManager.GetStream("clockBuzzer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to write screenshot to {0}.
         /// </summary>
         internal static string FailedScreenshotStatusTextFormat {

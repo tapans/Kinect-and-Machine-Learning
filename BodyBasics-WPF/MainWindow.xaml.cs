@@ -135,7 +135,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         System.Windows.Threading.DispatcherTimer Timer = new System.Windows.Threading.DispatcherTimer();
 
         // for alarm sounds
-        SoundPlayer player = new SoundPlayer(@"C:\Users\tapan\Documents\BodyBasics-WPF\sounds\clockBuzzer.wav");
+        SoundPlayer player = new SoundPlayer(Properties.Resources.clockBuzzer);
         private bool _ringing = false;
 
         // Timer config
@@ -286,7 +286,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
         private void initDateTimePicker()
         {
-            dtpicker.Value = new DateTime(2015, 2, 22);
+            dtpicker.Value = new DateTime(2015, 3, 22);
             dtpicker.ValueChanged += dtpicker_ValueChanged;
         }
 
@@ -304,7 +304,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
         private void ring_alarm(object state)
         {
-            Console.Write("ring ring");            
+            Console.WriteLine("ring ring");            
             player.Play();
             this.ringing = true;
         }
@@ -548,8 +548,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
             switch (exerciseState)
             {
-                case 0:
-                    if (this.ringing && exerciseCounter == 5 )
+                case 0:                    
+                    if (this.ringing && exerciseCounter == 1 )
                     {
                         stopAlarm();
                     }
