@@ -102,11 +102,9 @@ namespace Gestures.HMMs
         private String[] files;
                 
         private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
-        private HiddenMarkovClassifier<MultivariateNormalDistribution> lh_hmm;
-        private HiddenMarkovClassifier<MultivariateNormalDistribution> rh_hmm;
         private HiddenConditionalRandomField<double[]> hcrf;
 
-        private int numJoints = 2;
+        private int numJoints = Enum.GetNames(typeof(JointType)).Length;
 
         public MainForm()
         {
@@ -156,7 +154,7 @@ namespace Gestures.HMMs
             this.bones.Add(new Tuple<JointType, JointType>(JointType.HipLeft, JointType.KneeLeft));
             this.bones.Add(new Tuple<JointType, JointType>(JointType.KneeLeft, JointType.AnkleLeft));
             this.bones.Add(new Tuple<JointType, JointType>(JointType.AnkleLeft, JointType.FootLeft));
-
+            
             // set IsAvailableChanged event notifier
             this.kinectSensor.IsAvailableChanged += this.KinectSensor_IsAvailableChanged;
 
@@ -173,19 +171,14 @@ namespace Gestures.HMMs
             InitializeComponent();
 
             databases = new List<Database>();
-            databases.Add(new Database());
-            databases.Add(new Database());
-
             files = new String[numJoints];
-            //TODO: CLEAN THIS SO ITS NOT HARDCODED;
-         
-            files[0] = "rh.xml";
-            files[1] = "lh.xml";
-
             hmms = new List<HiddenMarkovClassifier<MultivariateNormalDistribution>>();
-            //TODO: clean this. whyy...
-            hmms.Add(null);
-            hmms.Add(null);
+            for (int i = 0; i < numJoints; i++)
+            {
+                files[i] = ((JointType)i).ToString() + ".xml";
+                hmms.Add(null);
+                databases.Add(new Database());
+            }
            
             gridSamples.AutoGenerateColumns = false;
             cbClasses.DataSource = databases[0].Classes;
@@ -253,13 +246,11 @@ namespace Gestures.HMMs
 
                         else if (captureStarted == true && body.HandRightState != HandState.Open)
                         {
-                            //TODO: GET ALL POINTS AND ADDEM
-                            Point p = jointPoints[JointType.HandRight];
-                            Point p2 = jointPoints[JointType.HandLeft];
-                            Console.WriteLine("drawing to position: " + p.X + "," + p.Y);
                             List<Point> pts = new List<Point>();
-                            pts.Add(p);
-                            pts.Add(p2);
+                            for (int i = 0; i < numJoints; i++)
+                            {
+                                pts.Add(jointPoints[((JointType)i)]);
+                            }
                             inputKinect_Draw(pts);
                         }
                     }
@@ -447,9 +438,10 @@ namespace Gestures.HMMs
 
         private void openDataDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            //TODO: INSTANTIATE ALL HMMS
-            hmms[0] = null;
-            hmms[1] = null;
+            for (int i = 0; i < numJoints; i++)
+            {
+                hmms[i] = null;
+            }
             hcrf = null;
 
             FolderBrowserDialog fbd = new FolderBrowserDialog();
@@ -458,20 +450,8 @@ namespace Gestures.HMMs
 
             for (int i = 0; i < files.Length; i++)
             {
-                switch (files[i].Substring(files[i].LastIndexOf("\\")+1))
-                {
-                        //TODO: FIX HARDCODED FILES NAMES
-                    case "rh.xml":
-                        databases[0].Load(new FileStream(files[i], FileMode.Open));
-                        break;
-
-                    case "lh.xml":
-                        databases[1].Load(new FileStream(files[i], FileMode.Open));
-                        break;
-
-                    default:
-                        break;
-                }
+                String path = Path.Combine(fbd.SelectedPath, Path.GetFileName(files[i]));
+                databases[0].Load(new FileStream(path, FileMode.Open));      
             }
 
             btnLearnHMM.Enabled = true;
