@@ -42,27 +42,29 @@ namespace Gestures.HMMs
     public partial class Canvas : UserControl
     {
         private bool capturing;
-        private List<Point> sequence;
-
-
+        private List<List<Point>> sequence;
 
         public Canvas()
         {
             InitializeComponent();
-
-            sequence = new List<Point>();
+            sequence = new List<List<Point>>();
+            sequence.Add(new List<Point>());
+            sequence.Add(new List<Point>());
             this.DoubleBuffered = true;
         }
 
-        public Point[] GetSequence()
+        public Point[] GetSequence(int n)
         {
-            return sequence.ToArray();
-        }
 
+            return sequence[n].ToArray();
+        }
 
         public void Clear()
         {
-            sequence.Clear();
+            for (int i = 0; i < sequence.Count; i++ )
+            {
+                sequence[i].Clear();
+            }
             this.Refresh();
         }
 
@@ -73,63 +75,46 @@ namespace Gestures.HMMs
 
             if (!this.DesignMode)
             {
-                if (sequence.Count > 1)
+                for (int ii = 0; ii < sequence.Count; ii++)
                 {
-                    for (int i = 1; i < sequence.Count; i++)
+                    if (sequence[ii].Count > 1)
                     {
-                        int x = (int)sequence[i].X;
-                        int y = (int)sequence[i].Y;
-                        int p = (int)Accord.Math.Tools.Scale(0, sequence.Count, 0, 255, i);
-
-                        int prevX = (int)sequence[i - 1].X;
-                        int prevY = (int)sequence[i - 1].Y;
-                        int prevP = (int)Accord.Math.Tools.Scale(0, sequence.Count, 0, 255, i - 1);
-
-                        if (x == prevX && y == prevY)
-                            continue;
-
-                        Point start = new Point(prevX, prevY);
-                        Point end = new Point(x, y);
-                        Color colorStart = Color.FromArgb(255 - p, 0, p);
-                        Color colorEnd = Color.FromArgb(255 - prevP, 0, prevP);
-
-                        using (Brush brush = new LinearGradientBrush(start, end, colorStart, colorEnd))
-                        using (Pen pen = new Pen(brush, 10))
-                        {
-                            pen.StartCap = LineCap.Round;
-                            pen.EndCap = LineCap.Round;
-
-                            e.Graphics.DrawLine(pen, prevX, prevY, x, y);
+                        List<Point> seq = sequence[ii];
+                        using (Brush brush = new SolidBrush(Color.Blue)) {
+                            using (Pen pen = new Pen(brush, 10))
+                            {
+                                e.Graphics.DrawEllipse(pen, sequence[ii][sequence[ii].Count - 1].X, sequence[ii][sequence[ii].Count - 1].Y, 5, 5);
+                            }
                         }
+                        
+                        //for (int i = 1; i < seq.Count; i++)
+                        //{
+                        //    int x = (int)seq[i].X;
+                        //    int y = (int)seq[i].Y;
+                        //    int p = (int)Accord.Math.Tools.Scale(0, seq.Count, 0, 255, i);
+
+                        //    int prevX = (int)seq[i - 1].X;
+                        //    int prevY = (int)seq[i - 1].Y;
+                        //    int prevP = (int)Accord.Math.Tools.Scale(0, seq.Count, 0, 255, i - 1);
+
+                        //    if (x == prevX && y == prevY)
+                        //        continue;
+
+                        //    Point start = new Point(prevX, prevY);
+                        //    Point end = new Point(x, y);
+                        //    Color colorStart = Color.FromArgb(255 - p, 0, p);
+                        //    Color colorEnd = Color.FromArgb(255 - prevP, 0, prevP);
+
+                        //    using (Brush brush = new LinearGradientBrush(start, end, colorStart, colorEnd))
+                        //    using (Pen pen = new Pen(brush, 10))
+                        //    {
+                        //        pen.StartCap = LineCap.Round;
+                        //        pen.EndCap = LineCap.Round;
+
+                        //        e.Graphics.DrawLine(pen, prevX, prevY, x, y);
+                        //    }
+                        //}
                     }
-                }
-            }
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            Clear();
-
-            capturing = true;
-
-            base.OnMouseDown(e);
-        }
-
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            capturing = false;
-
-            base.OnMouseUp(e);
-        }
-
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            if (capturing)
-            {
-                if (e.X > 0 && e.Y > 0)
-                {
-                    sequence.Add(new Point(e.X, e.Y));
-                    this.Refresh();
                 }
             }
         }
@@ -146,15 +131,18 @@ namespace Gestures.HMMs
             capturing = false;
         }
 
-        public void onHandDraw(Point p)
+        public void onHandDraw(List<Point> pts)
         {
             if (capturing)
             {
-                if (p.X > 0 && p.Y > 0)
+                for (int i=0; i<sequence.Count; i++)
                 {
-                    sequence.Add(new Point(p.X, p.Y));
-                    this.Refresh();
+                    if (pts[i].X > 0 && pts[i].Y > 0)
+                    {
+                        sequence[i].Add(new Point(pts[i].X, pts[i].Y));
+                    }
                 }
+                this.Refresh();
             }
         }
 

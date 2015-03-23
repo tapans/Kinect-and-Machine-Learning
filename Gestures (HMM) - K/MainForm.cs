@@ -97,11 +97,13 @@ namespace Gestures.HMMs
         Boolean captureStarted = false;
         #endregion
 
-        
-        private Database rh_database;
-        private Database lh_database;
+        private List<Database> databases;
+        private String[] files;
+
         private HiddenMarkovClassifier<MultivariateNormalDistribution> rh_hmm;
-        private HiddenMarkovClassifier<MultivariateNormalDistribution> lh_hmm;
+        private HiddenMarkovClassifier<MultivariateNormalDistribution> lh_hmm; 
+        private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
+
         private HiddenConditionalRandomField<double[]> hcrf;
 
 
@@ -169,11 +171,21 @@ namespace Gestures.HMMs
 
             InitializeComponent();
 
-            rh_database = new Database();
-            lh_database = new Database();
+            databases = new List<Database>();
+            databases.Add(new Database());
+            databases.Add(new Database());
+
+            files = new String[2];
+            files[0] = "rh.xml";
+            files[1] = "lh.xml";
+
+            hmms = new List<HiddenMarkovClassifier<MultivariateNormalDistribution>>();
+            hmms.Add(rh_hmm);
+            hmms.Add(lh_hmm);
+
             gridSamples.AutoGenerateColumns = false;
-            cbClasses.DataSource = rh_database.Classes;
-            gridSamples.DataSource = rh_database.Samples;
+            cbClasses.DataSource = databases[0].Classes;
+            gridSamples.DataSource = databases[0].Samples;
             openDataDialog.InitialDirectory = Path.Combine(Application.StartupPath, "Resources");
         }
 
@@ -238,8 +250,12 @@ namespace Gestures.HMMs
                         else if (captureStarted == true && body.HandRightState != HandState.Open)
                         {
                             Point p = jointPoints[JointType.HandRight];
+                            Point p2 = jointPoints[JointType.HandLeft];
                             Console.WriteLine("drawing to position: " + p.X + "," + p.Y);
-                            inputKinect_Draw(p);
+                            List<Point> pts = new List<Point>();
+                            pts.Add(p);
+                            pts.Add(p2);
+                            inputKinect_Draw(pts);
                         }
                     }
                 }
@@ -281,8 +297,10 @@ namespace Gestures.HMMs
 
         private void btnLearnHMM_Click(object sender, EventArgs e)
         {
-            this.LearnHMM(rh_database, rh_hmm);
-            this.LearnHMM(lh_database, lh_hmm);
+            for (int i = 0; i < databases.Count; i++ )
+            {
+                this.LearnHMM(databases[i], hmms[i]);
+            }
         }
 
         private void LearnHMM(Database db, HiddenMarkovClassifier<MultivariateNormalDistribution> hmm)
@@ -355,58 +373,58 @@ namespace Gestures.HMMs
             btnLearnHCRF.Enabled = true;
         }
 
-        private void btnLearnHCRF_Click(object sender, EventArgs e)
-        {
-            if (gridSamples.Rows.Count == 0)
-            {
-                MessageBox.Show("Please load or insert some data first.");
-                return;
-            }
+        private void btnLearnHCRF_Click(object sender, EventArgs e) { }
+        //{
+        //    if (gridSamples.Rows.Count == 0)
+        //    {
+        //        MessageBox.Show("Please load or insert some data first.");
+        //        return;
+        //    }
 
-            var samples = rh_database.Samples;
-            var classes = rh_database.Classes;
+        //    var samples = rh_database.Samples;
+        //    var classes = rh_database.Classes;
 
-            double[][][] inputs = new double[samples.Count][][];
-            int[] outputs = new int[samples.Count];
+        //    double[][][] inputs = new double[samples.Count][][];
+        //    int[] outputs = new int[samples.Count];
 
-            for (int i = 0; i < inputs.Length; i++)
-            {
-                inputs[i] = samples[i].Input;
-                outputs[i] = samples[i].Output;
-            }
+        //    for (int i = 0; i < inputs.Length; i++)
+        //    {
+        //        inputs[i] = samples[i].Input;
+        //        outputs[i] = samples[i].Output;
+        //    }
 
-            int iterations = 100;
-            double tolerance = 0.01;
-
-
-            hcrf = new HiddenConditionalRandomField<double[]>(
-                new MarkovMultivariateFunction(hmm));
+        //    int iterations = 100;
+        //    double tolerance = 0.01;
 
 
-            // Create the learning algorithm for the ensemble classifier
-            var teacher = new HiddenResilientGradientLearning<double[]>(hcrf)
-            {
-                Iterations = iterations,
-                Tolerance = tolerance
-            };
+        //    hcrf = new HiddenConditionalRandomField<double[]>(
+        //        new MarkovMultivariateFunction(hmm));
 
 
-            // Run the learning algorithm
-            double error = teacher.Run(inputs, outputs);
+        //    // Create the learning algorithm for the ensemble classifier
+        //    var teacher = new HiddenResilientGradientLearning<double[]>(hcrf)
+        //    {
+        //        Iterations = iterations,
+        //        Tolerance = tolerance
+        //    };
 
 
-            foreach (var sample in rh_database.Samples)
-            {
-                sample.RecognizedAs = hcrf.Compute(sample.Input);
-            }
+        //    // Run the learning algorithm
+        //    double error = teacher.Run(inputs, outputs);
 
-            foreach (DataGridViewRow row in gridSamples.Rows)
-            {
-                var sample = row.DataBoundItem as Sequence;
-                row.DefaultCellStyle.BackColor = (sample.RecognizedAs == sample.Output) ?
-                    Color.LightGreen : Color.White;
-            }
-        }
+
+        //    foreach (var sample in rh_database.Samples)
+        //    {
+        //        sample.RecognizedAs = hcrf.Compute(sample.Input);
+        //    }
+
+        //    foreach (DataGridViewRow row in gridSamples.Rows)
+        //    {
+        //        var sample = row.DataBoundItem as Sequence;
+        //        row.DefaultCellStyle.BackColor = (sample.RecognizedAs == sample.Output) ?
+        //            Color.LightGreen : Color.White;
+        //    }
+        //}
 
 
 
@@ -423,8 +441,8 @@ namespace Gestures.HMMs
 
         private void openDataDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            rh_hmm = null;
-            lh_hmm = null;
+            hmms[0] = null;
+            hmms[1] = null;
             hcrf = null;
             FolderBrowserDialog fbd = new FolderBrowserDialog();
             DialogResult result = fbd.ShowDialog();
@@ -438,10 +456,10 @@ namespace Gestures.HMMs
                 switch (files[i].Substring(files[i].LastIndexOf("\\")))
                 {
                     case "rh.xml":
-                        rh_database.Load(new FileStream(files[i], FileMode.Open));
+                        databases[0].Load(new FileStream(files[i], FileMode.Open));
                         break;
                     case "lh.xml":
-                        lh_database.Load(new FileStream(files[i], FileMode.Open));
+                        databases[1].Load(new FileStream(files[i], FileMode.Open));
                         break;
                     default:
                         break;
@@ -456,8 +474,16 @@ namespace Gestures.HMMs
 
         private void saveDataDialog_FileOk(object sender, CancelEventArgs e)
         {
-            using (var stream = saveDataDialog.OpenFile())
-                rh_database.Save(stream);
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+            DialogResult result = fbd.ShowDialog();
+            String dirPath = fbd.SelectedPath;
+            String path;
+            for (int i = 0; i < databases.Count; i++)
+            {
+                path = Path.Combine(dirPath, Path.GetFileName(files[i]));
+                using (var stream = File.OpenWrite(path))
+                    databases[i].Save(stream);
+            }
         }
 
         private void btnFile_MouseDown(object sender, MouseEventArgs e)
@@ -497,87 +523,61 @@ namespace Gestures.HMMs
             string selectedItem = cbClasses.SelectedItem as String;
             string classLabel = String.IsNullOrEmpty(selectedItem) ?
                 cbClasses.Text : selectedItem;
-
-            if (rh_database.Add(canvas.GetSequence(), classLabel) != null)
+            for (int i = 0; i < databases.Count; i++)
             {
-                canvas.Clear();
+                if (databases[i].Add(canvas.GetSequence(i), classLabel) != null)
+                {
+                    canvas.Clear();
 
-                if (rh_database.Classes.Count >= 2 &&
-                    rh_database.SamplesPerClass() >= 3)
-                    btnLearnHMM.Enabled = true;
+                    if (databases[i].Classes.Count >= 1 &&
+                        databases[i].SamplesPerClass() >= 1)
+                        btnLearnHMM.Enabled = true;
 
-                panelUserLabeling.Visible = false;
+                    panelUserLabeling.Visible = false;
+                }
             }
         }
 
-
-        // Canvas events
-        private void inputCanvas_MouseUp(object sender, MouseEventArgs e)
-        {
-            double[][] input = Sequence.Preprocess(canvas.GetSequence());
-
-            if (input.Length < 5)
-            {
-                panelUserLabeling.Visible = false;
-                panelClassification.Visible = false;
-                return;
-            }
-
-            if (hmm == null && hcrf == null)
-            {
-                panelUserLabeling.Visible = true;
-                panelClassification.Visible = false;
-            }
-
-            else
-            {
-                int index = (hcrf != null) ?
-                    hcrf.Compute(input) : hmm.Compute(input);
-
-                string label = rh_database.Classes[index];
-                lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", label);
-                panelClassification.Visible = true;
-                panelUserLabeling.Visible = false;
-                cbClasses.SelectedItem = label;
-            }
-        }
-
-        private void canvas_MouseDown(object sender, MouseEventArgs e)
-        {
-            lbIdle.Visible = false;
-        }
 
         //Kinect events
         private void inputKinect_stopDrawing()
         {
             canvas.onHandStop();
 
-            double[][] input = Sequence.Preprocess(canvas.GetSequence());
+            double[][][] inputs = new double[2][][];
+            inputs[0] = Sequence.Preprocess(canvas.GetSequence(0)); ;
+            inputs[1] = Sequence.Preprocess(canvas.GetSequence(1));
 
-            if (input.Length < 5)
+            String[] output_labels = new String[inputs.Length]; 
+            for (int i = 0; i < inputs.Length; i++)
             {
-                panelUserLabeling.Visible = false;
-                panelClassification.Visible = false;
-                return;
-            }
+                if (inputs[i].Length < 5)
+                {
+                    panelUserLabeling.Visible = false;
+                    panelClassification.Visible = false;
+                    return;
+                }
 
-            if (hmm == null && hcrf == null)
-            {
-                panelUserLabeling.Visible = true;
-                panelClassification.Visible = false;
-            }
+                if (hmms[i] == null && hcrf == null)
+                {
+                    panelUserLabeling.Visible = true;
+                    panelClassification.Visible = false;
+                }
 
-            else
-            {
-                int index = (hcrf != null) ?
-                    hcrf.Compute(input) : hmm.Compute(input);
-
-                string label = rh_database.Classes[index];
-                lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", label);
-                panelClassification.Visible = true;
-                panelUserLabeling.Visible = false;
-                cbClasses.SelectedItem = label;
+                else
+                {
+                    int index = hmms[i].Compute(inputs[i]);
+                    string label = databases[i].Classes[index];
+                    output_labels[i] = label;
+                }
             }
+            String guessed_label = output_labels.GroupBy(x => x)
+                                  .OrderByDescending(x => x.Count())
+                                  .First().Key;
+            lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", guessed_label);
+            panelClassification.Visible = true;
+            panelUserLabeling.Visible = false;
+            cbClasses.SelectedItem = guessed_label;
         }
 
         private void inputKinect_startDrawing()
@@ -587,9 +587,9 @@ namespace Gestures.HMMs
             lbIdle.Visible = false;
         }
 
-        private void inputKinect_Draw(Point p)
+        private void inputKinect_Draw(List<Point> pts)
         {
-            canvas.onHandDraw(p);
+            canvas.onHandDraw(pts);
         }
 
         // Aero Glass settings
