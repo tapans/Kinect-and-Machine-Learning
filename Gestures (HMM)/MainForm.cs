@@ -104,7 +104,7 @@ namespace Gestures.HMMs
         private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
         private HiddenConditionalRandomField<double[]> hcrf;
 
-        private int numJoints = Enum.GetNames(typeof(JointType)).Length;
+        public static int numJoints = Enum.GetNames(typeof(JointType)).Length;
 
         public MainForm()
         {

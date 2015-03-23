@@ -51,8 +51,10 @@ namespace Gestures.HMMs
             InitializeComponent();
 
             sequence = new List<List<Point>>();
-            sequence.Add(new List<Point>());
-            sequence.Add(new List<Point>());
+            for (int i = 0; i < MainForm.numJoints; i++)
+            {
+                sequence.Add(new List<Point>());
+            }
             this.DoubleBuffered = true;
         }
 
