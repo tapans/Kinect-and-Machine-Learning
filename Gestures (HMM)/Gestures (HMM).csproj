@@ -102,18 +102,6 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Accord, Version=2.12.0.0, Culture=neutral, PublicKeyToken=fa1a88e29555ccf7, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Release\net40\Accord.dll</HintPath>
-    </Reference>
-    <Reference Include="Accord.Math, Version=2.12.0.0, Culture=neutral, PublicKeyToken=fa1a88e29555ccf7, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Release\net40\Accord.Math.dll</HintPath>
-    </Reference>
-    <Reference Include="Accord.Statistics, Version=2.12.0.0, Culture=neutral, PublicKeyToken=fa1a88e29555ccf7, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Release\net40\Accord.Statistics.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Kinect, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="PresentationCore" />
@@ -204,7 +192,20 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Downloads\sources\Accord.Core\Accord.Core.csproj">
+      <Project>{a177a90c-8207-466a-af70-f2b8452a42ac}</Project>
+      <Name>Accord.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\Downloads\sources\Accord.Math\Accord.Math.csproj">
+      <Project>{f718e9a8-db62-4785-8c49-4333a60d256a}</Project>
+      <Name>Accord.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\Downloads\sources\Accord.Statistics\Accord.Statistics.csproj">
+      <Project>{fd8101dd-c95d-42d6-ad44-ae01c25f2811}</Project>
+      <Name>Accord.Statistics</Name>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup>
     <Content Include="framework.ico" />
     <Content Include="Resources\sample-mouse.xml">
