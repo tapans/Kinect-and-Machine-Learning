@@ -296,6 +296,7 @@ namespace Gestures.HMMs
             for (int i = 0; i < databases.Count; i++)
             {
                 hmms[i] = this.learnHMM(databases[i]);
+                Console.WriteLine("done learning hmm for joint: " + i + " : " + Enum.GetName(typeof(JointType), i));
             }
         }
 
@@ -519,8 +520,8 @@ namespace Gestures.HMMs
                 {
                     
 
-                    if (databases[i].Classes.Count >= 2 &&
-                        databases[i].SamplesPerClass() >= 3)
+                    if (databases[i].Classes.Count >= 1 &&
+                        databases[i].SamplesPerClass() >= 1)
                         btnLearnHMM.Enabled = true;
 
                     panelUserLabeling.Visible = false;
