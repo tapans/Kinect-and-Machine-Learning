@@ -98,7 +98,15 @@ namespace Accord.Statistics.Models.Fields
                 logLikelihoods[i] -= sum;
 
             // Choose the class with maximum likelihood
-            int imax; logLikelihoods.Max(out imax);
+            int imax;
+            if (logLikelihoods.Length > 0)
+            {
+                logLikelihoods.Max(out imax);
+            }
+            else
+            {
+                imax = 0;
+            }      
 
             return imax;
         }

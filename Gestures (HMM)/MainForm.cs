@@ -160,6 +160,7 @@ namespace Gestures.HMMs
 
             // open the sensor
             this.kinectSensor.Open();
+            
 
             if (this.bodyFrameReader != null)
             {
@@ -293,11 +294,13 @@ namespace Gestures.HMMs
 
         private void btnLearnHMM_Click(object sender, EventArgs e)
         {
+            this.kinectSensor.Close();
             for (int i = 0; i < databases.Count; i++)
             {
                 hmms[i] = this.learnHMM(databases[i]);
                 Console.WriteLine("done learning hmm for joint: " + i + " : " + Enum.GetName(typeof(JointType), i));
             }
+            this.kinectSensor.Open();
         }
 
         private HiddenMarkovClassifier<MultivariateNormalDistribution> learnHMM(Database database)
@@ -446,13 +449,12 @@ namespace Gestures.HMMs
             hcrf = null;
 
             FolderBrowserDialog fbd = new FolderBrowserDialog();
-            DialogResult result = fbd.ShowDialog();
-            string[] files = Directory.GetFiles(fbd.SelectedPath);
+            DialogResult result = fbd.ShowDialog();            
 
             for (int i = 0; i < files.Length; i++)
             {
                 String path = Path.Combine(fbd.SelectedPath, Path.GetFileName(files[i]));
-                databases[0].Load(new FileStream(path, FileMode.Open));      
+                databases[i].Load(new FileStream(path, FileMode.Open));      
             }
 
             btnLearnHMM.Enabled = true;

@@ -271,11 +271,18 @@ namespace Accord.Statistics.Models.Markov
             if (threshold != null)
                 lnsum = Special.LogSum(lnsum, rejection);
 
-            int imax; 
-
-            // Get the index of the most likely model
-            maxValue = logLikelihoods.Max(out imax);
-
+            int imax;
+            
+            if (logLikelihoods.Length > 0)
+            {
+                // Get the index of the most likely model
+                maxValue = logLikelihoods.Max(out imax);
+            }
+            else
+            {
+                maxValue = imax = 0;
+            }
+        
             // Normalize if different from zero
             if (lnsum != Double.NegativeInfinity)
             {
