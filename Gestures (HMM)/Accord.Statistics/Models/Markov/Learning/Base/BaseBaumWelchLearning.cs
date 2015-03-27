@@ -258,9 +258,11 @@ namespace Accord.Statistics.Models.Markov.Learning
             double newLogLikelihood = Double.NegativeInfinity;
             convergence.NewValue = Double.NegativeInfinity;
 
-
+            int itersLeft = 30;
             do // Until convergence or max iterations is reached
             {
+                Console.WriteLine(itersLeft);
+                itersLeft--;
                 // For each sequence in the observations input
                 for (int i = 0; i < observations.Length; i++)
                 {
@@ -358,7 +360,7 @@ namespace Accord.Statistics.Models.Markov.Learning
                     stop = true; // The model has converged.
                 }
 
-            } while (!stop);
+            } while (!stop && itersLeft > 0);
 
 
             // Returns the model average log-likelihood

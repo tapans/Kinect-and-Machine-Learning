@@ -163,7 +163,8 @@ namespace Accord.Statistics.Models.Markov.Learning
 
 
             // For each model,
-            Parallel.For(0, classes, i =>
+            //Parallel.For(0, classes, i =>
+            for (int i = 0; i < classes; i++)
             {
                 // We will start the class model learning problem
                 var args = new GenerativeLearningEventArgs(i, classes);
@@ -187,7 +188,8 @@ namespace Accord.Statistics.Models.Markov.Learning
 
                 // Update and report progress
                 OnGenerativeClassModelLearningFinished(args);
-            });
+            }
+            //});
 
             if (Empirical)
             {
