@@ -37,6 +37,8 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;  
 using Accord.Statistics.Distributions.Fitting;
 using Accord.Statistics.Distributions.Multivariate;
 using Accord.Statistics.Models.Fields;
@@ -47,6 +49,8 @@ using Accord.Statistics.Models.Markov.Learning;
 using Accord.Statistics.Models.Markov.Topology;
 using Gestures.Native;
 using Microsoft.Kinect;
+using Microsoft.Speech.AudioFormat;
+using Microsoft.Speech.Recognition;
 
 namespace Gestures.HMMs
 {
@@ -95,6 +99,17 @@ namespace Gestures.HMMs
         private const float InferredZPositionClamp = 0.1f;
 
         Boolean captureStarted = false;
+
+        /// <summary>
+        /// Stream for 32b-16b conversion.
+        /// </summary>
+        private KinectAudioStream convertStream = null;
+
+        /// <summary>
+        /// Speech recognition engine using audio data from Kinect.
+        /// </summary>
+        private SpeechRecognitionEngine speechEngine = null;
+
         #endregion
 
 
@@ -167,6 +182,48 @@ namespace Gestures.HMMs
                 this.bodyFrameReader.FrameArrived += this.Reader_FrameArrived;
             }
 
+            // grab the audio stream
+            IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
+            System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
+
+            // create the convert stream
+            this.convertStream = new KinectAudioStream(audioStream);
+
+            RecognizerInfo ri = TryGetKinectRecognizer();
+
+            if (null != ri)
+            {
+                this.speechEngine = new SpeechRecognitionEngine(ri.Id);
+
+                var directions = new Choices();
+                directions.Add(new SemanticResultValue("start", "START"));
+                directions.Add(new SemanticResultValue("stop", "STOP"));
+
+                var gb = new GrammarBuilder { Culture = ri.Culture };
+                gb.Append(directions);
+                var g = new Grammar(gb);
+                this.speechEngine.LoadGrammar(g);
+
+                this.speechEngine.SpeechRecognized += this.SpeechRecognized;
+                this.speechEngine.SpeechRecognitionRejected += this.SpeechRejected;
+
+                // let the convertStream know speech is going active
+                this.convertStream.SpeechActive = true;
+
+                // For long recognition sessions (a few hours or more), it may be beneficial to turn off adaptation of the acoustic model. 
+                // This will prevent recognition accuracy from degrading over time.
+                ////speechEngine.UpdateRecognizerSetting("AdaptationOn", 0);
+
+
+                this.speechEngine.SetInputToAudioStream(
+                    this.convertStream, new SpeechAudioFormatInfo(EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
+                this.speechEngine.RecognizeAsync(RecognizeMode.Multiple);
+            }
+            else
+            {
+                //this.statusBarText.Text = Properties.Resources.NoSpeechRecognizer;
+            }
+
             #endregion
 
             InitializeComponent();
@@ -185,6 +242,48 @@ namespace Gestures.HMMs
             cbClasses.DataSource = databases[0].Classes;
             gridSamples.DataSource = databases[0].Samples;
             openDataDialog.InitialDirectory = Path.Combine(Application.StartupPath, "Resources");
+        }
+
+        private void SpeechRejected(object sender, SpeechRecognitionRejectedEventArgs e)
+        {
+            //throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Handler for recognized speech events.
+        /// </summary>
+        /// <param name="sender">object sending the event.</param>
+        /// <param name="e">event arguments.</param>
+        private void SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
+        {
+            // Speech utterance confidence below which we treat speech as if it hadn't been heard
+            const double ConfidenceThreshold = 0.3;
+
+            // Number of degrees in a right angle.
+            const int DegreesInRightAngle = 90;
+
+            // Number of pixels turtle should move forwards or backwards each time.
+            const int DisplacementAmount = 60;
+
+           // this.ClearRecognitionHighlights();
+
+            if (e.Result.Confidence >= ConfidenceThreshold)
+            {
+                switch (e.Result.Semantics.Value.ToString())
+                {
+                    case "START":
+                            Console.WriteLine("start drawing");
+                            inputKinect_startDrawing();
+                            captureStarted = true;
+                        break;
+
+                    case "STOP":
+                            Console.WriteLine("stop drawing");
+                            inputKinect_stopDrawing();
+                            captureStarted = false;
+                        break;                   
+                }
+            }
         }
 
         private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
@@ -231,21 +330,7 @@ namespace Gestures.HMMs
                             jointPoints[jointType] = new Point((int)depthSpacePoint.X, (int)depthSpacePoint.Y);
                         }
 
-                        if (body.HandRightState == HandState.Lasso && captureStarted == false)
-                        {
-                            Console.WriteLine("start drawing");
-                            inputKinect_startDrawing();
-                            captureStarted = true;
-                        }
-
-                        else if (body.HandRightState == HandState.Open && captureStarted == true)
-                        {
-                            Console.WriteLine("stop drawing");
-                            inputKinect_stopDrawing();
-                            captureStarted = false;
-                        }
-
-                        else if (captureStarted == true && body.HandRightState != HandState.Open)
+                         if (captureStarted == true)
                         {
                             List<Point> pts = new List<Point>();
                             for (int i = 0; i < numJoints; i++)
@@ -257,6 +342,41 @@ namespace Gestures.HMMs
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the metadata for the speech recognizer (acoustic model) most suitable to
+        /// process audio from Kinect device.
+        /// </summary>
+        /// <returns>
+        /// RecognizerInfo if found, <code>null</code> otherwise.
+        /// </returns>
+        private static RecognizerInfo TryGetKinectRecognizer()
+        {
+            IEnumerable<RecognizerInfo> recognizers;
+
+            // This is required to catch the case when an expected recognizer is not installed.
+            // By default - the x86 Speech Runtime is always expected. 
+            try
+            {
+                recognizers = SpeechRecognitionEngine.InstalledRecognizers();
+            }
+            catch (COMException)
+            {
+                return null;
+            }
+
+            foreach (RecognizerInfo recognizer in recognizers)
+            {
+                string value;
+                recognizer.AdditionalInfo.TryGetValue("Kinect", out value);
+                if ("True".Equals(value, StringComparison.OrdinalIgnoreCase) && "en-US".Equals(recognizer.Culture.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return recognizer;
+                }
+            }
+
+            return null;
         }
 
         private void KinectSensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)

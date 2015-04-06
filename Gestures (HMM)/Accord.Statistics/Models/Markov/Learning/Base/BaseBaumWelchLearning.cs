@@ -261,7 +261,6 @@ namespace Accord.Statistics.Models.Markov.Learning
             int itersLeft = 30;
             do // Until convergence or max iterations is reached
             {
-                Console.WriteLine(itersLeft);
                 itersLeft--;
                 // For each sequence in the observations input
                 for (int i = 0; i < observations.Length; i++)

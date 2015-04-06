@@ -286,7 +286,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
         private void initDateTimePicker()
         {
-            dtpicker.Value = new DateTime(2015, 3, 22);
+            dtpicker.Value = new DateTime(2015, 4, 5);
             dtpicker.ValueChanged += dtpicker_ValueChanged;
         }
 
@@ -419,6 +419,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                     dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, this.displayWidth, this.displayHeight));
 
                     int penIndex = 0;
+
                     foreach (Body body in this.bodies)
                     {
                         Pen drawPen = this.bodyColors[penIndex++];
@@ -482,10 +483,10 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                                     print2DArray(x_pos);
                                     print2DArray(y_pos);
                                     print2DArray(z_pos);
-                                    */                                   
                                     print2DArray(x_pos, true, "circle_x.csv");
                                     print2DArray(y_pos, true, "circle_y.csv");
                                     print2DArray(z_pos, true, "circle_z.csv");
+                                    */
                                     frameCounter = -2; // done
                                      
                                 }
@@ -545,11 +546,11 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             Point spineShoulderJoint = jointPoints[JointType.SpineShoulder];
             Point rightShoulderJoint = jointPoints[JointType.ShoulderRight];
             Point rightElbowJoint = jointPoints[JointType.ElbowRight];
-
+            
             switch (exerciseState)
             {
                 case 0:                    
-                    if (this.ringing && exerciseCounter == 1 )
+                    if (this.ringing && exerciseCounter == 3 )
                     {
                         stopAlarm();
                     }
