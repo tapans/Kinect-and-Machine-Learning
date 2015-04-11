@@ -173,6 +173,12 @@ namespace Accord.Statistics.Models.Markov
             double[] likelihoods;
             return Compute(sequence, out likelihoods);
         }
+        protected double[] Compute2(Array sequence)
+        {
+            double[] likelihoods;
+            Compute2(sequence, out likelihoods);
+            return likelihoods;
+        }
 
         /// <summary>
         ///   Computes the most likely class for a given sequence.
@@ -218,6 +224,21 @@ namespace Accord.Statistics.Models.Markov
         {
             double maxValue, thresholdValue;
             int imax = compute(sequence, out responsibilities, out thresholdValue, out maxValue);
+
+            // Convert to probabilities
+            for (int i = 0; i < responsibilities.Length; i++)
+                responsibilities[i] = Math.Exp(responsibilities[i]);
+
+            // return the index of the most likely model
+            // or -1 if the sequence has been rejected.
+            //
+            return (thresholdValue > maxValue) ? -1 : imax;
+        }
+
+        protected int Compute2(Array sequence, out double[] responsibilities)
+        {
+            double maxValue, thresholdValue;
+            int imax = compute2(sequence, out responsibilities, out thresholdValue, out maxValue);
 
             // Convert to probabilities
             for (int i = 0; i < responsibilities.Length; i++)
@@ -288,6 +309,63 @@ namespace Accord.Statistics.Models.Markov
             {
                 for (int i = 0; i < logLikelihoods.Length; i++)
                     logLikelihoods[i] -= lnsum;
+            }
+
+            return imax;
+        }
+
+        private int compute2(Array sequence, out double[] logLikelihoods,
+            out double rejectionValue, out double maxValue)
+        {
+            logLikelihoods = new double[models.Length];
+
+            double[] responses = logLikelihoods;
+            double rejection = Double.NegativeInfinity;
+
+            // For every model in the set (including the threshold model)
+#if SERIAL
+            for (int i = 0; i < models.Length+1; i++)
+#else
+            Parallel.For(0, models.Length + 1, i =>
+#endif
+            {
+                if (i < models.Length)
+                {
+                    // Evaluate the probability of the sequence
+                    responses[i] = models[i].Evaluate(sequence) + Math.Log(classPriors[i]);
+                }
+                else if (threshold != null)
+                {
+                    // Evaluate the current rejection threshold 
+                    rejection = threshold.Evaluate(sequence) + Math.Log(weight);
+                }
+            }
+#if !SERIAL
+);
+#endif
+
+            logLikelihoods = responses;
+            rejectionValue = rejection;
+
+            // Compute posterior likelihoods
+            double lnsum = Double.NegativeInfinity;
+            for (int i = 0; i < classPriors.Length; i++)
+                lnsum = Special.LogSum(lnsum, logLikelihoods[i]);
+
+            // Compute threshold model posterior likelihood
+            if (threshold != null)
+                lnsum = Special.LogSum(lnsum, rejection);
+
+            int imax;
+
+            if (logLikelihoods.Length > 0)
+            {
+                // Get the index of the most likely model
+                maxValue = logLikelihoods.Max(out imax);
+            }
+            else
+            {
+                maxValue = imax = 0;
             }
 
             return imax;

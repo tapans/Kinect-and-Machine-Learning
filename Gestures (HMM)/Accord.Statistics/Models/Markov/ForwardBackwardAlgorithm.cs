@@ -557,7 +557,8 @@ namespace Accord.Statistics.Models.Markov
                 }
             }
 
-            System.Diagnostics.Debug.Assert(!lnFwd.HasNaN());
+
+          //  System.Diagnostics.Debug.Assert(!lnFwd.HasNaN());
         }
 
         /// <summary>
@@ -704,7 +705,7 @@ namespace Accord.Statistics.Models.Markov
                 }
             }
 
-            System.Diagnostics.Debug.Assert(!lnBwd.HasNaN());
+            //System.Diagnostics.Debug.Assert(!lnBwd.HasNaN());
         }
 
         /// <summary>

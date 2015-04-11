@@ -497,7 +497,7 @@ namespace Accord.Statistics.Models.Markov.Learning
                     }
                 }
 
-                System.Diagnostics.Debug.Assert(!Double.IsNaN(lnsum));
+              //  System.Diagnostics.Debug.Assert(!Double.IsNaN(lnsum));
 
                 // Normalize if different from zero
                 if (lnsum != Double.NegativeInfinity)

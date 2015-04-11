@@ -110,11 +110,16 @@ namespace Gestures.HMMs
         /// </summary>
         private SpeechRecognitionEngine speechEngine = null;
 
+        private int frameCount = 0;
+        private int initialFrameCount = 90;
         #endregion
 
 
         private List<Database> databases;
         private String[] files;
+
+        private Dictionary<String, double> avgFramesPerLabel_Training;
+        private int framesThreshold = 10;
                 
         private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
         private HiddenConditionalRandomField<double[]> hcrf;
@@ -237,10 +242,16 @@ namespace Gestures.HMMs
                 hmms.Add(null);
                 databases.Add(new Database());
             }
+            avgFramesPerLabel_Training = new Dictionary<String, double>();
            
+            /*
+             * Since we have muliple joints/hmms/gestures corresponding to a single exercise, no sense in visualizing sequence for only 1 joint
+             * 
             gridSamples.AutoGenerateColumns = false;
             cbClasses.DataSource = databases[0].Classes;
             gridSamples.DataSource = databases[0].Samples;
+             */
+             
             openDataDialog.InitialDirectory = Path.Combine(Application.StartupPath, "Resources");
         }
 
@@ -311,6 +322,8 @@ namespace Gestures.HMMs
                 {
                     if (body.IsTracked)
                     {
+                        
+
                         IReadOnlyDictionary<JointType, Joint> joints = body.Joints;
 
                         // convert the joint points to depth (display) space
@@ -329,9 +342,22 @@ namespace Gestures.HMMs
                             DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
                             jointPoints[jointType] = new Point((int)depthSpacePoint.X, (int)depthSpacePoint.Y);
                         }
+                        //if (body.HandRightState == HandState.Lasso && captureStarted == false)
+                        //{
+                        //    Console.WriteLine("start drawing");
+                        //    inputKinect_startDrawing();
+                        //    captureStarted = true;
+                        //}
 
-                         if (captureStarted == true)
+                        //else if (body.HandRightState == HandState.Open && captureStarted == true)
+                        //{
+                        //    Console.WriteLine("stop drawing");
+                        //    inputKinect_stopDrawing();
+                        //    captureStarted = false;
+                        //}
+                        if (captureStarted == true)
                         {
+                            frameCount++; 
                             List<Point> pts = new List<Point>();
                             for (int i = 0; i < numJoints; i++)
                             {
@@ -339,6 +365,51 @@ namespace Gestures.HMMs
                             }
                             inputKinect_Draw(pts);
                         }
+
+                        //if (captureStarted == true && hmms[0]!=null)
+                        //{
+                            
+                        //    //after n frames, check if current sequence matches any exercise
+                        //    if (frameCount > initialFrameCount)
+                        //    {
+                        //        double[][][] inputs = new double[numJoints][][];
+                        //        for (int i = 0; i < numJoints; i++)
+                        //        {
+                        //            inputs[i] = Sequence.Preprocess(canvas.GetSequence(i));
+                        //        }
+
+                        //        String[] output_labels = new String[inputs.Length];
+                        //        double[][] probabilities = new double[inputs.Length][];
+                        //        for (int i = 0; i < inputs.Length; i++)
+                        //        {                                    
+                        //            if (hmms[i] != null) 
+                        //            {
+                        //                int index = hmms[i].Compute(inputs[i]);
+                        //                string label = (index >= 0) ? databases[i].Classes[index] : "NOT FOUND";
+                        //                output_labels[i] = label;
+                        //            }
+                        //        }
+                        //        String guessed_label;
+                        //        if (output_labels.Any(x => x != "NOT FOUND"))
+                        //        {
+                        //            guessed_label = output_labels.Where(x => x != "NOT FOUND").GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;
+                        //            //found exercise, stop drawing
+                        //            //inputKinect_stopDrawing();
+                        //            canvas.onHandStop();
+                        //            canvas.Clear();
+                        //            lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", guessed_label);
+                        //            panelClassification.Visible = true;
+                        //            panelUserLabeling.Visible = false;
+                        //            cbClasses.SelectedItem = guessed_label;
+                        //        }
+                        //        else
+                        //        {
+                        //            //not found yet, continue
+                        //        }
+                        //    }
+                        //}
+                        
+                        
                     }
                 }
             }
@@ -420,16 +491,28 @@ namespace Gestures.HMMs
                 hmms[i] = this.learnHMM(databases[i]);
                 Console.WriteLine("done learning hmm for joint: " + i + " : " + Enum.GetName(typeof(JointType), i));
             }
+
+            //Get an estimate of whether the samples match the model or not 
+            //naive algorithm: if most of the gestures/hmms/joints in a sample were successfully recognized (not rejected), then that sample/sequence is highlighted as green. if rejected, then highlighted as white
+            //foreach (DataGridViewRow row in gridSamples.Rows)
+            //{
+            //    var sample = row.DataBoundItem as Sequence;
+                               
+            //    row.DefaultCellStyle.BackColor = (sample.RecognizedAs == sample.Output) ?
+            //        Color.LightGreen : Color.White;
+            //}
+
             this.kinectSensor.Open();
         }
 
         private HiddenMarkovClassifier<MultivariateNormalDistribution> learnHMM(Database database)
         {
-            if (gridSamples.Rows.Count == 0)
-            {
-                MessageBox.Show("Please load or insert some data first.");
-                return null;
-            }
+            //TODO: add a check to ensure that data has been loaded
+            //if (gridSamples.Rows.Count == 0)
+            //{
+            //    MessageBox.Show("Please load or insert some data first.");
+            //    return null;
+            //}
 
             BindingList<Sequence> samples = database.Samples;
             BindingList<String> classes = database.Classes;
@@ -445,13 +528,14 @@ namespace Gestures.HMMs
 
             int states = 5;
             int iterations = 0;
-            double tolerance = 0.01;
-            bool rejection = false;
+            double tolerance = 10;
+            bool rejection = true;
 
 
             HiddenMarkovClassifier<MultivariateNormalDistribution> hmm = new HiddenMarkovClassifier<MultivariateNormalDistribution>(classes.Count,
                 new Forward(states), new MultivariateNormalDistribution(2), classes.ToArray());
 
+            //hmm.Sensitivity = 0.00001;
 
             // Create the learning algorithm for the ensemble classifier
             var teacher = new HiddenMarkovClassifierLearning<MultivariateNormalDistribution>(hmm,
@@ -476,19 +560,24 @@ namespace Gestures.HMMs
             // Run the learning algorithm
             double error = teacher.Run(inputs, outputs);
 
-
             // Classify all training instances
             foreach (var sample in database.Samples)
             {
                 sample.RecognizedAs = hmm.Compute(sample.Input);
             }
 
+            /*
+             * ISSUE: only checks the last joint/hmm/gesture to determine if sample was recognized or not => incorrect measure of correspondence of sample with model!
+             * potential soln: recognize if most joints/gestures/hmms fit the model / are not rejected?
+             
             foreach (DataGridViewRow row in gridSamples.Rows)
             {
                 var sample = row.DataBoundItem as Sequence;
                 row.DefaultCellStyle.BackColor = (sample.RecognizedAs == sample.Output) ?
                     Color.LightGreen : Color.White;
             }
+             
+             */
 
             btnLearnHCRF.Enabled = true;
             return hmm;
@@ -577,6 +666,9 @@ namespace Gestures.HMMs
                 databases[i].Load(new FileStream(path, FileMode.Open));      
             }
 
+            //get avg frames for each label using one of the joint files
+            avgFramesPerLabel_Training = databases[0].avgFramesPerLabel();
+
             btnLearnHMM.Enabled = true;
             btnLearnHCRF.Enabled = false;
 
@@ -608,7 +700,7 @@ namespace Gestures.HMMs
         // Top user interaction panel box events
         private void btnYes_Click(object sender, EventArgs e)
         {
-            addGesture();
+            addExercise();
         }
 
         private void btnNo_Click(object sender, EventArgs e)
@@ -627,10 +719,10 @@ namespace Gestures.HMMs
 
         private void btnInsert_Click(object sender, EventArgs e)
         {
-            addGesture();
+            addExercise();
         }
 
-        private void addGesture()
+        private void addExercise()
         {
             string selectedItem = cbClasses.SelectedItem as String;
             string classLabel = String.IsNullOrEmpty(selectedItem) ?
@@ -649,6 +741,7 @@ namespace Gestures.HMMs
                     panelUserLabeling.Visible = false;
                 }
             }
+            avgFramesPerLabel_Training = databases[0].avgFramesPerLabel();
             canvas.Clear();
         }
 
@@ -656,7 +749,7 @@ namespace Gestures.HMMs
         private void inputKinect_stopDrawing()
         {
             canvas.onHandStop();
-
+            
             double[][][] inputs = new double[numJoints][][];
             for (int i = 0; i < numJoints; i++)
             {
@@ -664,6 +757,7 @@ namespace Gestures.HMMs
             }
 
             String[] output_labels = new String[inputs.Length];
+            double[][] probabilities = new double[inputs.Length][];
             for (int i = 0; i < inputs.Length; i++)
             {
                 if (inputs[i].Length < 5)
@@ -682,16 +776,73 @@ namespace Gestures.HMMs
                 else
                 {
                     int index = hmms[i].Compute(inputs[i]);
-                    string label = databases[i].Classes[index];
+                    string label = (index >= 0) ? databases[i].Classes[index] : "NOT FOUND";
                     output_labels[i] = label;
-                    
                 }
             }
-            String guessed_label = output_labels.GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;
+            String guessed_label;
+            if(output_labels.Any(x => x!="NOT FOUND")){
+                guessed_label = output_labels.Where(x => x != "NOT FOUND").GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;               
+            }
+            else
+            {
+                guessed_label = "NOT FOUND";
+                //guessed_label = output_labels.GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;                
+            }
+
+            //compare number of frames in sequence with avg # of frames in training cases for the predicted label
+            if (avgFramesPerLabel_Training.Count() > 0 && guessed_label != null)
+            {
+                if (guessed_label != "NOT FOUND")
+                {
+                    double framesDifference = Math.Abs(avgFramesPerLabel_Training[guessed_label] - canvas.GetSequence(0).Count());
+                    if (framesDifference > framesThreshold)
+                    {
+                        guessed_label = "REJECTED";
+                        Console.WriteLine("Frames difference: " + framesDifference);
+                    }
+                }
+            }
+
             lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", guessed_label);
             panelClassification.Visible = true;
             panelUserLabeling.Visible = false;
             cbClasses.SelectedItem = guessed_label;
+
+
+           //     else
+           //     {
+           //         probabilities[i] = hmms[i].Compute2(inputs[i]);
+           //     }
+           // }
+           // //String guessed_label = output_labels.GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;
+           //// List<double> probsum = new List<double>();
+
+           // String guessed_label = "";
+           // if (probabilities != null && probabilities[0] != null)
+           // {
+           //     var probsum = new Dictionary<double, string>();
+           //     for (int i = 0; i < databases[0].Classes.Count; i++)
+           //     {
+           //         double tmp = 0;
+           //         for (int j = 0; j < numJoints; j++)
+           //         {
+           //             tmp += probabilities[j][i];
+           //         }
+           //         probsum[tmp] = databases[0].Classes[i];
+           //         Console.WriteLine("Prob for " + i + ": " + tmp);
+           //     }
+           //     if (probsum.Count > 0)
+           //     {
+           //         guessed_label = probsum[probsum.Keys.Max()];
+           //     }
+           // }
+            
+            
+           // lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", guessed_label);
+           // panelClassification.Visible = true;
+           // panelUserLabeling.Visible = false;
+           // //cbClasses.SelectedItem = guessed_label;
                
         }
 

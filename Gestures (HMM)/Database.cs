@@ -53,6 +53,29 @@ namespace Gestures.HMMs
             Samples = new BindingList<Sequence>();
         }
 
+        public Dictionary<String, double> avgFramesPerLabel()
+        {
+            Dictionary<String, double> result = new Dictionary<string, double>();
+            if (Classes.Count > 0 && Samples.Count > 0)
+            {
+                //if file has been loaded, for each label, find avg # of obs of sequences
+                foreach (string label in Classes)
+                {
+                    int numObs = 0;
+                    int numSamplesPerLabel = 0;
+                    foreach (Sequence sample in Samples){
+                        if (sample.OutputName == label){
+                            numSamplesPerLabel++;
+                            numObs += sample.SourcePath.Count();
+                        }
+                    }
+                    result[label] = (double) numObs / numSamplesPerLabel; 
+                }  
+            }
+            return result;
+
+        }
+
         public void Save(Stream stream)
         {
             var serializer = new XmlSerializer(typeof(BindingList<Sequence>));

@@ -227,7 +227,10 @@ namespace Accord.Statistics.Models.Markov
         {
             return base.Compute(sequence);
         }
-
+        public double[] Compute2(Array sequence)
+        {
+            return base.Compute2(sequence);
+        }
         /// <summary>
         ///   Computes the most likely class for a given sequence.
         /// </summary>

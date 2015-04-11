@@ -44,8 +44,6 @@ namespace Gestures.HMMs
         private bool capturing;
         private List<List<Point>> sequence;
 
-
-
         public Canvas()
         {
             InitializeComponent();

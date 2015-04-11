@@ -288,7 +288,7 @@ namespace Accord.Statistics.Models.Markov.Learning
                             lnsum = Special.LogSum(lnsum, logGamma[t, k]);
                         }
 
-                        System.Diagnostics.Debug.Assert(!Double.IsNaN(lnsum));
+                       // System.Diagnostics.Debug.Assert(!Double.IsNaN(lnsum));
 
                         // Normalize if different from zero
                         if (lnsum != Double.NegativeInfinity)
