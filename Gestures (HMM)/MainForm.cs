@@ -98,8 +98,6 @@ namespace Gestures.HMMs
         /// </summary>
         private const float InferredZPositionClamp = 0.1f;
 
-        Boolean checkingExercise = false;
-
         /// <summary>
         /// Stream for 32b-16b conversion.
         /// </summary>
@@ -110,10 +108,9 @@ namespace Gestures.HMMs
         /// </summary>
         private SpeechRecognitionEngine speechEngine = null;
 
-        //private int frameCount = 0;
+        private int frameCount = 0;
         //private int initialFrameCount = 90;
         #endregion
-
 
         private List<Database> databases;
         private String[] files;
@@ -129,6 +126,7 @@ namespace Gestures.HMMs
 
         /* for exercise counting */
         private int excCount = 0;
+        Boolean checkingExercise = false;
                 
         private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
 
@@ -307,6 +305,11 @@ namespace Gestures.HMMs
 
         private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
+            frameCount++;
+            if (frameCount % 2 == 0)
+            {
+                return;
+            }
             bool dataReceived = false;
             using (BodyFrame bodyFrame = e.FrameReference.AcquireFrame())
             {
@@ -365,7 +368,7 @@ namespace Gestures.HMMs
                         //}
                         if (checkingExercise == true)
                         {
-                            //frameCount++; 
+                            
                             List<Point> pts = new List<Point>();
                             for (int i = 0; i < numJoints; i++)
                             {
@@ -803,8 +806,17 @@ namespace Gestures.HMMs
 
         private void checkForExercise()
         {
+            if (hmms[0] == null)
+            {
+                return;
+            }
             //canvas.onHandStop();
-    
+            double framesDifference = avgFramesPerLabel_Training["jj"] - canvas.GetSequence(0).Count();
+            if ((framesDifference < 0 || framesDifference > framesThreshold) && (framesDifference >= 0 || Math.Abs(framesDifference) > framesThreshold + matchedPointsOffset))
+            {
+                Console.WriteLine("nothing to do here");
+                return;
+            }
             double[][][] inputs = new double[numJoints][][];
             for (int i = 0; i < numJoints; i++)
             {
@@ -863,26 +875,30 @@ namespace Gestures.HMMs
                      *      |_when this is the case:
                      *          stop exercise but remove the last x frames from the sequence and add them to the seq for next exc  
                      */
-                    double framesDifference = avgFramesPerLabel_Training[guessed_label] - canvas.GetSequence(0).Count();
+                    //double framesDifference = avgFramesPerLabel_Training[guessed_label] - canvas.GetSequence(0).Count();
                     if ((framesDifference >= 0 && framesDifference <= framesThreshold) || (framesDifference < 0 && Math.Abs(framesDifference) <= framesThreshold + matchedPointsOffset))
                     {
                         numFramesWithinThreshold++;
                         numMatchedPoints.Add(output_labels.Where(x => x == guessed_label).Count());
                         if (numFramesWithinThreshold >= matchedPointsOffset)
                         {
+                            Console.WriteLine("about to check if num matched pts decreasing");
                             if (numMatchedJointsDecreasing(numMatchedPoints, matchedPointsOffset))
                             {
+                                Console.WriteLine("last n matched points strictly decreasing");
                                 //fix current exercise sequence by remove last offset # of points from seq, stop exc and append to new seq and start new exc
                                 List<List<Point>> lastOffsetSequences = canvas.removeLastOffsetSequences(matchedPointsOffset);
                                 checkingExercise = false;
-                                canvas.onStop();
+                                //canvas.onStop();
                                 excCount++;
 
                                 Console.WriteLine("num exercises done so far: " + excCount);
                                 lbHaveYouDrawn.Text = String.Format("Number of exercises done so far: {0}?", excCount);
-                                panelClassification.Visible = true;
+                                //panelClassification.Visible = true;
+                                //panelUserLabeling.Visible = false;
+                                //cbClasses.SelectedItem = guessed_label;
 
-                                canvas.onStart();
+                                //canvas.onStart();
                                 canvas.setSequences(lastOffsetSequences);
                                 checkingExercise = true;
                                 numFramesWithinThreshold = 0;

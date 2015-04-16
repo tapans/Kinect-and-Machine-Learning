@@ -843,7 +843,7 @@
             this.btnLearnHCRF.TextImageRelation = System.Windows.Forms.TextImageRelation.TextBeforeImage;
             this.btnLearnHCRF.UseCompatibleTextRendering = true;
             this.btnLearnHCRF.UseVisualStyleBackColor = true;
-            this.btnLearnHCRF.Click += new System.EventHandler(this.btnLearnHCRF_Click);
+           // this.btnLearnHCRF.Click += new System.EventHandler(this.btnLearnHCRF_Click);
             // 
             // canvas
             // 

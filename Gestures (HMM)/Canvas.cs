@@ -91,31 +91,31 @@ namespace Gestures.HMMs
                 sequences[i].Clear();
             }
                 
-            this.Refresh();
+           // this.Refresh();
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
 
-            base.OnPaint(e);
+           // base.OnPaint(e);
 
-            if (!this.DesignMode)
-            {
-                for (int ii = 0; ii < sequences.Count; ii++)
-                {
-                    if (sequences[ii].Count > 1)
-                    {
-                        List<Point> seq = sequences[ii];
-                        using (Brush brush = new SolidBrush(Color.Blue))
-                        {
-                            using (Pen pen = new Pen(brush, 10))
-                            {
-                                e.Graphics.DrawEllipse(pen, sequences[ii][sequences[ii].Count - 1].X, sequences[ii][sequences[ii].Count - 1].Y, 5, 5);
-                            }
-                        }
-                    }
-                }
-            }
+            //if (!this.DesignMode)
+            //{
+            //    for (int ii = 0; ii < sequences.Count; ii++)
+            //    {
+            //        if (sequences[ii].Count > 1)
+            //        {
+            //            List<Point> seq = sequences[ii];
+            //            using (Brush brush = new SolidBrush(Color.Blue))
+            //            {
+            //                using (Pen pen = new Pen(brush, 10))
+            //                {
+            //                    e.Graphics.DrawEllipse(pen, sequences[ii][sequences[ii].Count - 1].X, sequences[ii][sequences[ii].Count - 1].Y, 5, 5);
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
         }
 
         public void onStart()
@@ -139,7 +139,7 @@ namespace Gestures.HMMs
                     if (pts[i].X > 0 && pts[i].Y > 0)
                     {
                         sequences[i].Add(new Point(pts[i].X, pts[i].Y));
-                        this.Refresh();
+                        //this.Refresh();
                     }
                 }                    
             }
