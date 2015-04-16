@@ -42,31 +42,53 @@ namespace Gestures.HMMs
     public partial class Canvas : UserControl
     {
         private bool capturing;
-        private List<List<Point>> sequence;
+        private List<List<Point>> sequences;
 
         public Canvas()
         {
             InitializeComponent();
 
-            sequence = new List<List<Point>>();
+            sequences = new List<List<Point>>();
             for (int i = 0; i < MainForm.numJoints; i++)
             {
-                sequence.Add(new List<Point>());
+                sequences.Add(new List<Point>());
             }
             this.DoubleBuffered = true;
         }
 
+        public void setSequences(List<List<Point>> newExcSequences)
+        {
+            this.sequences = newExcSequences;
+        }
+
+        /*
+         * Pops and returns last offset amount from current excercise as starting sequences for new exercise
+        */
+        public List<List<Point>> removeLastOffsetSequences(int n){
+
+            //for each elem (list of points for corresponding joint) in this.seq, get last n points
+            List<List<Point>> newExerciseSequences = new List<List<Point>>();
+            int numPointsForCurrJoint = 0;
+            for (int i = 0; i < MainForm.numJoints; i++)
+            {
+                numPointsForCurrJoint = this.sequences[i].Count();
+                newExerciseSequences.Add(this.sequences[i].GetRange((numPointsForCurrJoint - n), n));  
+                this.sequences[i].RemoveRange((numPointsForCurrJoint - n), n);
+            }
+            return newExerciseSequences;
+        }
+
         public Point[] GetSequence(int n)
         {
-            return sequence[n].ToArray();
+            return sequences[n].ToArray();
         }
 
 
         public void Clear()
         {
-            for (int i = 0; i < sequence.Count; i++)
+            for (int i = 0; i < sequences.Count; i++)
             {
-                sequence[i].Clear();
+                sequences[i].Clear();
             }
                 
             this.Refresh();
@@ -79,16 +101,16 @@ namespace Gestures.HMMs
 
             if (!this.DesignMode)
             {
-                for (int ii = 0; ii < sequence.Count; ii++)
+                for (int ii = 0; ii < sequences.Count; ii++)
                 {
-                    if (sequence[ii].Count > 1)
+                    if (sequences[ii].Count > 1)
                     {
-                        List<Point> seq = sequence[ii];
+                        List<Point> seq = sequences[ii];
                         using (Brush brush = new SolidBrush(Color.Blue))
                         {
                             using (Pen pen = new Pen(brush, 10))
                             {
-                                e.Graphics.DrawEllipse(pen, sequence[ii][sequence[ii].Count - 1].X, sequence[ii][sequence[ii].Count - 1].Y, 5, 5);
+                                e.Graphics.DrawEllipse(pen, sequences[ii][sequences[ii].Count - 1].X, sequences[ii][sequences[ii].Count - 1].Y, 5, 5);
                             }
                         }
                     }
@@ -96,27 +118,27 @@ namespace Gestures.HMMs
             }
         }
 
-        public void onHandStart()
+        public void onStart()
         {
             Clear();
 
             capturing = true;
         }
 
-        public void onHandStop()
+        public void onStop()
         {
             capturing = false;
         }
 
-        public void onHandDraw(List<Point> pts)
+        public void onDraw(List<Point> pts)
         {
             if (capturing)
             {
-                for (int i = 0; i < sequence.Count; i++)
+                for (int i = 0; i < sequences.Count; i++)
                 {
                     if (pts[i].X > 0 && pts[i].Y > 0)
                     {
-                        sequence[i].Add(new Point(pts[i].X, pts[i].Y));
+                        sequences[i].Add(new Point(pts[i].X, pts[i].Y));
                         this.Refresh();
                     }
                 }                    

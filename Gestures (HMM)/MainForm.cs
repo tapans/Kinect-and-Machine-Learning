@@ -110,16 +110,25 @@ namespace Gestures.HMMs
         /// </summary>
         private SpeechRecognitionEngine speechEngine = null;
 
-        private int frameCount = 0;
-        private int initialFrameCount = 90;
+        //private int frameCount = 0;
+        //private int initialFrameCount = 90;
         #endregion
 
 
         private List<Database> databases;
         private String[] files;
 
+        /* for num of frames comparison */
         private Dictionary<String, double> avgFramesPerLabel_Training;
-        private int framesThreshold = 10;
+        private int framesThreshold = 20;
+
+        /* for num of matched joints comparison */
+        private int numFramesWithinThreshold = 0;
+        private List<int> numMatchedPoints = new List<int>();
+        public static int matchedPointsOffset = 2; //can only compare with previous, start comparing from offset
+
+        /* for exercise counting */
+        private int excCount = 0;
                 
         private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
         private HiddenConditionalRandomField<double[]> hcrf;
@@ -283,13 +292,13 @@ namespace Gestures.HMMs
                 switch (e.Result.Semantics.Value.ToString())
                 {
                     case "START":
-                            Console.WriteLine("start drawing");
+                            //Console.WriteLine("start drawing");
                             inputKinect_startDrawing();
                             captureStarted = true;
                         break;
 
                     case "STOP":
-                            Console.WriteLine("stop drawing");
+                            //Console.WriteLine("stop drawing");
                             inputKinect_stopDrawing();
                             captureStarted = false;
                         break;                   
@@ -357,13 +366,14 @@ namespace Gestures.HMMs
                         //}
                         if (captureStarted == true)
                         {
-                            frameCount++; 
+                            //frameCount++; 
                             List<Point> pts = new List<Point>();
                             for (int i = 0; i < numJoints; i++)
                             {
                                 pts.Add(jointPoints[((JointType)i)]);
                             }
                             inputKinect_Draw(pts);
+                            computeFrames();
                         }
 
                         //if (captureStarted == true && hmms[0]!=null)
@@ -528,14 +538,14 @@ namespace Gestures.HMMs
 
             int states = 5;
             int iterations = 0;
-            double tolerance = 10;
+            double tolerance = 0.1;
             bool rejection = true;
 
 
             HiddenMarkovClassifier<MultivariateNormalDistribution> hmm = new HiddenMarkovClassifier<MultivariateNormalDistribution>(classes.Count,
                 new Forward(states), new MultivariateNormalDistribution(2), classes.ToArray());
 
-            //hmm.Sensitivity = 0.00001;
+            //hmm.Sensitivity = 1;
 
             // Create the learning algorithm for the ensemble classifier
             var teacher = new HiddenMarkovClassifierLearning<MultivariateNormalDistribution>(hmm,
@@ -730,16 +740,17 @@ namespace Gestures.HMMs
 
             for (int i = 0; i < databases.Count; i++)
             {
-                if (databases[i].Add(canvas.GetSequence(i), classLabel) != null)
-                {
+                databases[i].Add(canvas.GetSequence(i), classLabel);
+                //if (databases[i].Add(canvas.GetSequence(i), classLabel) != null)
+                //{
                     
 
-                    if (databases[i].Classes.Count >= 1 &&
-                        databases[i].SamplesPerClass() >= 1)
-                        btnLearnHMM.Enabled = true;
+                //    if (databases[i].Classes.Count >= 1 &&
+                //        databases[i].SamplesPerClass() >= 1)
+                //        btnLearnHMM.Enabled = true;
 
-                    panelUserLabeling.Visible = false;
-                }
+                //    panelUserLabeling.Visible = false;
+                //}
             }
             avgFramesPerLabel_Training = databases[0].avgFramesPerLabel();
             canvas.Clear();
@@ -748,7 +759,7 @@ namespace Gestures.HMMs
         //Kinect events
         private void inputKinect_stopDrawing()
         {
-            canvas.onHandStop();
+            canvas.onStop();
             
             double[][][] inputs = new double[numJoints][][];
             for (int i = 0; i < numJoints; i++)
@@ -757,7 +768,7 @@ namespace Gestures.HMMs
             }
 
             String[] output_labels = new String[inputs.Length];
-            double[][] probabilities = new double[inputs.Length][];
+            //double[][] probabilities = new double[inputs.Length][];
             for (int i = 0; i < inputs.Length; i++)
             {
                 if (inputs[i].Length < 5)
@@ -782,7 +793,8 @@ namespace Gestures.HMMs
             }
             String guessed_label;
             if(output_labels.Any(x => x!="NOT FOUND")){
-                guessed_label = output_labels.Where(x => x != "NOT FOUND").GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;               
+                guessed_label = output_labels.Where(x => x != "NOT FOUND").GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;
+                Console.WriteLine("Most joints: "+guessed_label+" : " + output_labels.Where(x => x == guessed_label).Count());
             }
             else
             {
@@ -846,16 +858,127 @@ namespace Gestures.HMMs
                
         }
 
+        private void computeFrames()
+        {
+            //canvas.onHandStop();
+    
+            double[][][] inputs = new double[numJoints][][];
+            for (int i = 0; i < numJoints; i++)
+            {
+                inputs[i] = Sequence.Preprocess(canvas.GetSequence(i));
+            }
+
+            String[] output_labels = new String[inputs.Length];
+            double[][] probabilities = new double[inputs.Length][];
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                if (inputs[i].Length < 5)
+                {
+                    panelUserLabeling.Visible = false;
+                    panelClassification.Visible = false;
+                    return;
+                }
+
+                if (hmms[i] == null && hcrf == null)
+                {
+                    panelUserLabeling.Visible = true;
+                    panelClassification.Visible = false;
+                }
+
+                else
+                {
+                    int index = hmms[i].Compute(inputs[i]);
+                    string label = (index >= 0) ? databases[i].Classes[index] : "NOT FOUND";
+                    output_labels[i] = label;
+                }
+            }
+            String guessed_label;
+            if (output_labels.Any(x => x != "NOT FOUND"))
+            {
+                // return the most occuring exercise label by considering labels for all the joints
+                guessed_label = output_labels.Where(x => x != "NOT FOUND").GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;
+                int numOfGuessed = output_labels.Where(x => x == guessed_label).Count();
+                Console.WriteLine("Most joints: " + guessed_label + " : " + numOfGuessed);
+                if (numOfGuessed < 5)
+                {
+                    guessed_label = "NOT FOUND";
+                }
+            }
+            else
+            {
+                guessed_label = "NOT FOUND";
+                //guessed_label = output_labels.GroupBy(x => x).OrderByDescending(x => x.Count()).First().Key;                
+            }
+
+            //compare number of frames in sequence with avg # of frames in training cases for the predicted label
+            if (avgFramesPerLabel_Training.Count() > 0 && guessed_label != null) //only do below process for testing data, not training
+            {
+                if (guessed_label != "NOT FOUND")
+                {
+                    /* If within frame threshold:
+                     *      keep track of num of matched joints until all previous x frames consecutively decrease
+                     *      |_when this is the case:
+                     *          stop exercise but remove the last x frames from the sequence and add them to the seq for next exc  
+                     */
+                    double framesDifference = avgFramesPerLabel_Training[guessed_label] - canvas.GetSequence(0).Count();
+                    if ((framesDifference >= 0 && framesDifference <= framesThreshold) || (framesDifference < 0 && Math.Abs(framesDifference) <= framesThreshold + matchedPointsOffset))
+                    {
+                        numFramesWithinThreshold++;
+                        numMatchedPoints.Add(output_labels.Where(x => x == guessed_label).Count());
+                        if (numFramesWithinThreshold >= matchedPointsOffset)
+                        {
+                            //if (numMatchedJointsDecreasing(numMatchedPoints, matchedPointsOffset))
+                            //{
+                            //    //fix current exercise sequence by remove last offset # of points from seq, stop exc and append to new seq and start new exc
+                            //    //List<List<Point>> lastOffsetSequences = canvas.removeLastOffsetSequences(matchedPointsOffset);
+                            //    //canvas.onStop();
+                            //    excCount++;
+                            //    Console.WriteLine("num exercises done so far: " + excCount);
+                            //    //canvas.onStart();
+                            //    //canvas.setSequences(lastOffsetSequences);
+                            //    numFramesWithinThreshold = 0;
+                            //}
+                        }
+
+                    }
+                }
+            }
+
+          //  lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", guessed_label);
+            //panelClassification.Visible = true;
+            //panelUserLabeling.Visible = false;
+            //cbClasses.SelectedItem = guessed_label;
+
+
+        }
+        
+        /*
+         * Returns true iff lastN num of elements in numMatchedPoints list are sstrictly less than each other
+         */
+        private bool numMatchedJointsDecreasing(List<int> numMatchedPoints, int lastN)
+        {
+            int numElems = numMatchedPoints.Count();
+            int max = numMatchedPoints[numElems - lastN];
+            for (int i = numElems - lastN + 1; i < numElems; i++ ){
+                if (numMatchedPoints[i] >= max)
+                {
+                    return false;
+                }
+                max = numMatchedPoints[i];
+            }
+            return true;
+        }
+        
         private void inputKinect_startDrawing()
         {
-            canvas.onHandStart();
+            canvas.onStart();
 
             lbIdle.Visible = false;
         }
 
         private void inputKinect_Draw(List<Point> pts)
         {
-            canvas.onHandDraw(pts);
+            canvas.onDraw(pts);
         }
 
         // Aero Glass settings
