@@ -98,7 +98,7 @@ namespace Gestures.HMMs
         /// </summary>
         private const float InferredZPositionClamp = 0.1f;
 
-        Boolean captureStarted = false;
+        Boolean checkingExercise = false;
 
         /// <summary>
         /// Stream for 32b-16b conversion.
@@ -131,7 +131,6 @@ namespace Gestures.HMMs
         private int excCount = 0;
                 
         private List<HiddenMarkovClassifier<MultivariateNormalDistribution>> hmms;
-        private HiddenConditionalRandomField<double[]> hcrf;
 
         public static int numJoints = Enum.GetNames(typeof(JointType)).Length;
 
@@ -294,13 +293,13 @@ namespace Gestures.HMMs
                     case "START":
                             //Console.WriteLine("start drawing");
                             inputKinect_startDrawing();
-                            captureStarted = true;
+                            checkingExercise = true;
                         break;
 
                     case "STOP":
                             //Console.WriteLine("stop drawing");
                             inputKinect_stopDrawing();
-                            captureStarted = false;
+                            checkingExercise = false;
                         break;                   
                 }
             }
@@ -364,7 +363,7 @@ namespace Gestures.HMMs
                         //    inputKinect_stopDrawing();
                         //    captureStarted = false;
                         //}
-                        if (captureStarted == true)
+                        if (checkingExercise == true)
                         {
                             //frameCount++; 
                             List<Point> pts = new List<Point>();
@@ -373,7 +372,7 @@ namespace Gestures.HMMs
                                 pts.Add(jointPoints[((JointType)i)]);
                             }
                             inputKinect_Draw(pts);
-                            computeFrames();
+                            checkForExercise();
                         }
 
                         //if (captureStarted == true && hmms[0]!=null)
@@ -593,61 +592,6 @@ namespace Gestures.HMMs
             return hmm;
         }
 
-        private void btnLearnHCRF_Click(object sender, EventArgs e)
-        {
-            //if (gridSamples.Rows.Count == 0)
-            //{
-            //    MessageBox.Show("Please load or insert some data first.");
-            //    return;
-            //}
-
-            //var samples = database.Samples;
-            //var classes = database.Classes;
-
-            //double[][][] inputs = new double[samples.Count][][];
-            //int[] outputs = new int[samples.Count];
-
-            //for (int i = 0; i < inputs.Length; i++)
-            //{
-            //    inputs[i] = samples[i].Input;
-            //    outputs[i] = samples[i].Output;
-            //}
-
-            //int iterations = 100;
-            //double tolerance = 0.01;
-
-
-            //hcrf = new HiddenConditionalRandomField<double[]>(
-            //    new MarkovMultivariateFunction(hmm));
-
-
-            //// Create the learning algorithm for the ensemble classifier
-            //var teacher = new HiddenResilientGradientLearning<double[]>(hcrf)
-            //{
-            //    Iterations = iterations,
-            //    Tolerance = tolerance
-            //};
-
-
-            //// Run the learning algorithm
-            //double error = teacher.Run(inputs, outputs);
-
-
-            //foreach (var sample in database.Samples)
-            //{
-            //    sample.RecognizedAs = hcrf.Compute(sample.Input);
-            //}
-
-            //foreach (DataGridViewRow row in gridSamples.Rows)
-            //{
-            //    var sample = row.DataBoundItem as Sequence;
-            //    row.DefaultCellStyle.BackColor = (sample.RecognizedAs == sample.Output) ?
-            //        Color.LightGreen : Color.White;
-            //}
-        }
-
-
-
         // Load and save database methods
         private void openDataStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -665,7 +609,6 @@ namespace Gestures.HMMs
             {
                 hmms[i] = null;
             }
-            hcrf = null;
 
             FolderBrowserDialog fbd = new FolderBrowserDialog();
             DialogResult result = fbd.ShowDialog();            
@@ -778,7 +721,7 @@ namespace Gestures.HMMs
                     return;
                 }
 
-                if (hmms[i] == null && hcrf == null)
+                if (hmms[i] == null)
                 {
                     panelUserLabeling.Visible = true;
                     panelClassification.Visible = false;
@@ -858,7 +801,7 @@ namespace Gestures.HMMs
                
         }
 
-        private void computeFrames()
+        private void checkForExercise()
         {
             //canvas.onHandStop();
     
@@ -879,7 +822,7 @@ namespace Gestures.HMMs
                     return;
                 }
 
-                if (hmms[i] == null && hcrf == null)
+                if (hmms[i] == null)
                 {
                     panelUserLabeling.Visible = true;
                     panelClassification.Visible = false;
@@ -927,17 +870,23 @@ namespace Gestures.HMMs
                         numMatchedPoints.Add(output_labels.Where(x => x == guessed_label).Count());
                         if (numFramesWithinThreshold >= matchedPointsOffset)
                         {
-                            //if (numMatchedJointsDecreasing(numMatchedPoints, matchedPointsOffset))
-                            //{
-                            //    //fix current exercise sequence by remove last offset # of points from seq, stop exc and append to new seq and start new exc
-                            //    //List<List<Point>> lastOffsetSequences = canvas.removeLastOffsetSequences(matchedPointsOffset);
-                            //    //canvas.onStop();
-                            //    excCount++;
-                            //    Console.WriteLine("num exercises done so far: " + excCount);
-                            //    //canvas.onStart();
-                            //    //canvas.setSequences(lastOffsetSequences);
-                            //    numFramesWithinThreshold = 0;
-                            //}
+                            if (numMatchedJointsDecreasing(numMatchedPoints, matchedPointsOffset))
+                            {
+                                //fix current exercise sequence by remove last offset # of points from seq, stop exc and append to new seq and start new exc
+                                List<List<Point>> lastOffsetSequences = canvas.removeLastOffsetSequences(matchedPointsOffset);
+                                checkingExercise = false;
+                                canvas.onStop();
+                                excCount++;
+
+                                Console.WriteLine("num exercises done so far: " + excCount);
+                                lbHaveYouDrawn.Text = String.Format("Number of exercises done so far: {0}?", excCount);
+                                panelClassification.Visible = true;
+
+                                canvas.onStart();
+                                canvas.setSequences(lastOffsetSequences);
+                                checkingExercise = true;
+                                numFramesWithinThreshold = 0;
+                            }
                         }
 
                     }

@@ -198,15 +198,15 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Accord.Core\Accord.Core.csproj">
+    <ProjectReference Include="..\..\..\..\..\Downloads\sources\Accord.Core\Accord.Core.csproj">
       <Project>{a177a90c-8207-466a-af70-f2b8452a42ac}</Project>
       <Name>Accord.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="Accord.Math\Accord.Math.csproj">
+    <ProjectReference Include="..\..\..\..\..\Downloads\sources\Accord.Math\Accord.Math.csproj">
       <Project>{f718e9a8-db62-4785-8c49-4333a60d256a}</Project>
       <Name>Accord.Math</Name>
     </ProjectReference>
-    <ProjectReference Include="Accord.Statistics\Accord.Statistics.csproj">
+    <ProjectReference Include="..\..\..\..\..\Downloads\sources\Accord.Statistics\Accord.Statistics.csproj">
       <Project>{fd8101dd-c95d-42d6-ad44-ae01c25f2811}</Project>
       <Name>Accord.Statistics</Name>
     </ProjectReference>
