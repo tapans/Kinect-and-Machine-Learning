@@ -213,6 +213,31 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="framework.ico" />
+    <Content Include="Resources\jj_k\AnkleLeft.xml" />
+    <Content Include="Resources\jj_k\AnkleRight.xml" />
+    <Content Include="Resources\jj_k\ElbowLeft.xml" />
+    <Content Include="Resources\jj_k\ElbowRight.xml" />
+    <Content Include="Resources\jj_k\FootLeft.xml" />
+    <Content Include="Resources\jj_k\FootRight.xml" />
+    <Content Include="Resources\jj_k\HandLeft.xml" />
+    <Content Include="Resources\jj_k\HandRight.xml" />
+    <Content Include="Resources\jj_k\HandTipLeft.xml" />
+    <Content Include="Resources\jj_k\HandTipRight.xml" />
+    <Content Include="Resources\jj_k\Head.xml" />
+    <Content Include="Resources\jj_k\HipLeft.xml" />
+    <Content Include="Resources\jj_k\HipRight.xml" />
+    <Content Include="Resources\jj_k\KneeLeft.xml" />
+    <Content Include="Resources\jj_k\KneeRight.xml" />
+    <Content Include="Resources\jj_k\Neck.xml" />
+    <Content Include="Resources\jj_k\ShoulderLeft.xml" />
+    <Content Include="Resources\jj_k\ShoulderRight.xml" />
+    <Content Include="Resources\jj_k\SpineBase.xml" />
+    <Content Include="Resources\jj_k\SpineMid.xml" />
+    <Content Include="Resources\jj_k\SpineShoulder.xml" />
+    <Content Include="Resources\jj_k\ThumbLeft.xml" />
+    <Content Include="Resources\jj_k\ThumbRight.xml" />
+    <Content Include="Resources\jj_k\WristLeft.xml" />
+    <Content Include="Resources\jj_k\WristRight.xml" />
     <Content Include="Resources\sample-mouse.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

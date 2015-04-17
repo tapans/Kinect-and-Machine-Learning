@@ -62,9 +62,9 @@ namespace Gestures.HMMs
         }
 
         /*
-         * Pops and returns last offset amount from current excercise as starting sequences for new exercise
+         * returns last offset amount from current excercise for starting sequences for new exercise
         */
-        public List<List<Point>> removeLastOffsetSequences(int n){
+        public List<List<Point>> returnLastOffsetSequences(int n){
 
             //for each elem (list of points for corresponding joint) in this.seq, get last n points
             List<List<Point>> newExerciseSequences = new List<List<Point>>();
@@ -73,7 +73,7 @@ namespace Gestures.HMMs
             {
                 numPointsForCurrJoint = this.sequences[i].Count();
                 newExerciseSequences.Add(this.sequences[i].GetRange((numPointsForCurrJoint - n), n));  
-                this.sequences[i].RemoveRange((numPointsForCurrJoint - n), n);
+                //this.sequences[i].RemoveRange((numPointsForCurrJoint - n), n);
             }
             return newExerciseSequences;
         }
