@@ -813,19 +813,38 @@ namespace Gestures.HMMs
                
         }
 
-        private void checkForExercise()
+        private void checkForExercise(String exerciseName = "jj")
         {
+            //return if haven't trained yet
+            if (hmms[0] == null)
+            {
+                return;
+            }
+
+            //return if haven't reached anywhere within the threshold
+            double frameCount = canvas.GetSequence(0).Count();
+            double framesDifference = avgFramesPerLabel_Training[exerciseName] - frameCount;
+            Console.WriteLine("Frame diff: " + framesDifference + ", avgFrames: " + avgFramesPerLabel_Training[exerciseName] + ", frames threshold: " + framesThreshold);
+            if (Math.Abs(framesDifference) > framesThreshold)
+            {                
+                return;
+            }
+            Console.WriteLine("Frame diff accepted!");
+
             //canvas.onHandStop();
             if (excCount > 0)
             {
                 Console.WriteLine("Execount GT 0");
             }
+
+            //prepare for hmm computations
             double[][][] inputs = new double[numJoints][][];
             for (int i = 0; i < numJoints; i++)
             {
                 inputs[i] = Sequence.Preprocess(canvas.GetSequence(i));
             }
 
+            //do hmm computation to find closes exc match for each joint
             String[] output_labels = new String[inputs.Length];
             double[][] probabilities = new double[inputs.Length][];
             for (int i = 0; i < inputs.Length; i++)
@@ -837,24 +856,24 @@ namespace Gestures.HMMs
                     return;
                 }
 
-                if (hmms[i] == null)
-                {
-                    panelUserLabeling.Visible = true;
-                    panelClassification.Visible = false;
-                }
+                //if (hmms[i] == null)
+                //{
+                //    panelUserLabeling.Visible = true;
+                //    panelClassification.Visible = false;
+                //}
 
-                else
+                
+                if (excCount > 0 && inputs[i].Length > 70)
                 {
-                    if (excCount > 0 && inputs[i].Length > 70)
-                    {
-                        //Console.WriteLine("debug the compute function? i guess?");
-                        int fcxd;
-                    }
-                    int index = hmms[i].Compute(inputs[i]);
-                    string label = (index >= 0) ? databases[i].Classes[index] : "NOT FOUND";
-                    output_labels[i] = label;
+                    //Console.WriteLine("debug the compute function? i guess?");
+                    int fcxd;
                 }
+                int index = hmms[i].Compute(inputs[i]);
+                string label = (index >= 0) ? databases[i].Classes[index] : "NOT FOUND";
+                output_labels[i] = label;                
             }
+
+            //determine if exc is done by analyzing num of evidence in each joint for given exc
             String guessed_label;
             if (output_labels.Any(x => x != "NOT FOUND"))
             {
@@ -874,65 +893,50 @@ namespace Gestures.HMMs
             }
             Console.WriteLine("Finished computing! Guessed: "+ guessed_label + " num of seqs in canvas atm: " + canvas.GetSequence(0).Count());
 
-            //compare number of frames in sequence with avg # of frames in training cases for the predicted label
-            if (avgFramesPerLabel_Training.Count() > 0 && guessed_label != null) //only do below process for testing data, not training
+            //if hmm predicted same exercise as the one being monitored for, find the closest end position of exc
+            if (guessed_label == exerciseName)
             {
-                if (guessed_label != "NOT FOUND")
-                {
-                    /* If within frame threshold:
-                     *      keep track of num of matched joints until all previous x frames consecutively decrease
-                     *      |_when this is the case:
-                     *          stop exercise but remove the last x frames from the sequence and add them to the seq for next exc  
-                     */
-                    double frameCount = canvas.GetSequence(0).Count();
-                    double framesDifference = avgFramesPerLabel_Training[guessed_label] - frameCount;
-                    Console.WriteLine("Frame diff: " + framesDifference + ", avgFrames: " + avgFramesPerLabel_Training[guessed_label] + ", frames threshold: " + framesThreshold);
-                    if ((framesDifference >= 0 && framesDifference <= framesThreshold) || (framesDifference < 0 && Math.Abs(framesDifference) <= framesThreshold + matchedPointsOffset))
+                /* If within frame threshold:
+                    *      keep track of num of matched joints until all previous x frames consecutively decrease
+                    *      |_when this is the case:
+                    *          stop exercise but remove the last x frames from the sequence and add them to the seq for next exc  
+                    */               
+                if ((framesDifference >= 0 && framesDifference <= framesThreshold) || (framesDifference < 0 && Math.Abs(framesDifference) <= framesThreshold + matchedPointsOffset))
+                {                       
+                    numFramesWithinThreshold++;
+                    numMatchedPoints.Add(output_labels.Where(x => x == guessed_label).Count());
+                    if (numFramesWithinThreshold >= matchedPointsOffset)
                     {
-                        Console.WriteLine("Frame diff accepted!");
-                        numFramesWithinThreshold++;
-                        numMatchedPoints.Add(output_labels.Where(x => x == guessed_label).Count());
-                        if (numFramesWithinThreshold >= matchedPointsOffset)
+                        if (numMatchedJointsDecreasing(numMatchedPoints, matchedPointsOffset))
                         {
-                            if (numMatchedJointsDecreasing(numMatchedPoints, matchedPointsOffset))
-                            {
-                                //fix current exercise sequence by remove last offset # of points from seq, stop exc and append to new seq and start new exc
-                                //List<List<Point>> lastOffsetSequences = canvas.returnLastOffsetSequences(matchedPointsOffset);
-                                //checkingExercise = false;
-                                //canvas.onStop();
-                                excCount++;
-                                stopWatch.Stop();
-                                // Get the elapsed time as a TimeSpan value.
-                                TimeSpan ts = stopWatch.Elapsed;
+                            excCount++;
 
-                                // Format and display the TimeSpan value. 
-                                string elapsedTime = ts.TotalSeconds.ToString();
-                                Console.WriteLine("RunTime " + elapsedTime + ", frame count: " + frameCount + ", expected time in seconds based on 30fps: " + frameCount / 30);
+                            stopWatch.Stop();
+                            // Get the elapsed time as a TimeSpan value.
+                            TimeSpan ts = stopWatch.Elapsed;
+                            // Format and display the TimeSpan value. 
+                            string elapsedTime = ts.TotalSeconds.ToString();
+                            Console.WriteLine("RunTime " + elapsedTime + ", frame count: " + frameCount + ", expected time in seconds based on 30fps: " + frameCount / 30);
+                            stopWatch.Reset();
+                            stopWatch.Start();
+                            Console.WriteLine("num exercises done so far: " + excCount);
 
-                                stopWatch.Reset();
-                                stopWatch.Start();
-                                Console.WriteLine("num exercises done so far: " + excCount);
-                                //lbHaveYouDrawn.Text = String.Format("Number of exercises done so far: {0}?", excCount);
-                                //panelClassification.Visible = true;
-                                canvas.Clear();
-                                //canvas.onStart();
-                                //canvas.setSequences(lastOffsetSequences);
-                                Console.WriteLine("Set the seq");
-                                //checkingExercise = true;
-                                //numFramesWithinThreshold = 0;
-                            }
+                            //start new exc with last 2 sequences
+                            List<List<Point>> lastOffsetSequences = canvas.returnLastOffsetSequences(matchedPointsOffset);
+                            canvas.Clear();
+                            canvas.setSequences(lastOffsetSequences);
+                            Console.WriteLine("Set the seq");                            
+                            numFramesWithinThreshold = 0;
                         }
-
                     }
+
                 }
-            }
+            }            
 
           //  lbHaveYouDrawn.Text = String.Format("Have you drawn a {0}?", guessed_label);
             //panelClassification.Visible = true;
             //panelUserLabeling.Visible = false;
             //cbClasses.SelectedItem = guessed_label;
-
-
         }
         
         /*
