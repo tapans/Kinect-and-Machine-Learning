@@ -909,6 +909,8 @@ namespace Gestures.HMMs
                                 string elapsedTime = ts.TotalSeconds.ToString();
                                 Console.WriteLine("RunTime " + elapsedTime + ", frame count: " + frameCount + ", expected time in seconds based on 30fps: " + frameCount / 30);
 
+                                stopWatch.Reset();
+                                stopWatch.Start();
                                 Console.WriteLine("num exercises done so far: " + excCount);
                                 //lbHaveYouDrawn.Text = String.Format("Number of exercises done so far: {0}?", excCount);
                                 //panelClassification.Visible = true;
@@ -957,7 +959,7 @@ namespace Gestures.HMMs
             lbIdle.Visible = false;
 
             excCount = 0;
-            stopWatch.Start();
+            stopWatch.Restart();
         }
 
         private void inputKinect_Draw(List<Point> pts)
