@@ -2,6 +2,7 @@
 {
     partial class MainForm
     {
+        
         /// <summary>
         /// Required designer variable.
         /// </summary>
@@ -18,7 +19,7 @@
                 components.Dispose();
             }
             base.Dispose(disposing);
-        }
+        }       
 
         #region Windows Form Designer generated code
 
@@ -100,6 +101,7 @@
             this.btnLearnHMM = new System.Windows.Forms.Button();
             this.btnLearnHCRF = new System.Windows.Forms.Button();
             this.canvas = new Gestures.HMMs.Canvas();
+            this.countdownLabel = new System.Windows.Forms.Label();
             this.tabSamples.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).BeginInit();
             this.splitContainer3.Panel1.SuspendLayout();
@@ -744,6 +746,7 @@
             this.lbHaveYouDrawn.TabIndex = 25;
             this.lbHaveYouDrawn.Text = "Have you drawn a {Foo} ?";
             this.lbHaveYouDrawn.UseCompatibleTextRendering = true;
+            this.lbHaveYouDrawn.Click += new System.EventHandler(this.lbHaveYouDrawn_Click);
             // 
             // menuFile
             // 
@@ -843,7 +846,6 @@
             this.btnLearnHCRF.TextImageRelation = System.Windows.Forms.TextImageRelation.TextBeforeImage;
             this.btnLearnHCRF.UseCompatibleTextRendering = true;
             this.btnLearnHCRF.UseVisualStyleBackColor = true;
-           // this.btnLearnHCRF.Click += new System.EventHandler(this.btnLearnHCRF_Click);
             // 
             // canvas
             // 
@@ -856,11 +858,22 @@
             this.canvas.Size = new System.Drawing.Size(516, 434);
             this.canvas.TabIndex = 19;
             // 
+            // countdownLabel
+            // 
+            this.countdownLabel.AutoSize = true;
+            this.countdownLabel.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.countdownLabel.Location = new System.Drawing.Point(535, 208);
+            this.countdownLabel.Name = "countdownLabel";
+            this.countdownLabel.Size = new System.Drawing.Size(71, 30);
+            this.countdownLabel.TabIndex = 37;
+            this.countdownLabel.Text = "{BAR}";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(720, 499);
+            this.Controls.Add(this.countdownLabel);
             this.Controls.Add(this.panelUserLabeling);
             this.Controls.Add(this.panelClassification);
             this.Controls.Add(this.gridSamples);
@@ -915,6 +928,7 @@
             this.menuFile.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gridSamples)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -990,6 +1004,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colClassification;
         private System.Windows.Forms.Button btnLearnHMM;
         private System.Windows.Forms.Button btnLearnHCRF;
+        private System.Windows.Forms.Label countdownLabel;
     }
 }
 

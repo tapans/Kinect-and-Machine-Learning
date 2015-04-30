@@ -101,9 +101,9 @@ namespace Gestures.HMMs
 
         public Sequence Add(Point[] sequence, string classLabel)
         {
-            if (sequence == null || sequence.Length == 0)
+            if (sequence == null || sequence.Length < MainForm.magicNumber)
                 return null;
-
+            sequence = sequence.Skip(MainForm.magicNumber).ToArray();
             if (!Classes.Contains(classLabel))
                 Classes.Add(classLabel);
 

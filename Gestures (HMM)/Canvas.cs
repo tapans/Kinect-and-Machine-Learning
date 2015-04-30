@@ -56,6 +56,10 @@ namespace Gestures.HMMs
             this.DoubleBuffered = true;
         }
 
+        public List<List<Point>> getSequences(){
+            return this.sequences;
+        }
+
         public void setSequences(List<List<Point>> newExcSequences)
         {
             this.sequences = newExcSequences;
@@ -136,14 +140,35 @@ namespace Gestures.HMMs
             {
                 for (int i = 0; i < sequences.Count; i++)
                 {
-                    if (pts[i].X > 0 && pts[i].Y > 0)
-                    {
-                        sequences[i].Add(new Point(pts[i].X, pts[i].Y));
-                        this.Refresh();
-                    }
+                    sequences[i].Add(new Point(pts[i].X, pts[i].Y));
+                    this.Refresh();
+                    //if (pts[i].X > 0 && pts[i].Y > 0)
+                    //{
+                    //    sequences[i].Add(new Point(pts[i].X, pts[i].Y));
+                    //    this.Refresh();
+                    //}
                 }                    
             }
         }
 
+        public void drawSequence(List<List<Point>> sequence, double frameRate){
+
+            this.onStart();
+            List<Point> ptsToDraw;
+            //for each point j after every 1/frameRate seconds, for each joint i, draw jth point on canvas
+            for (int j = 0; j < sequence[0].Count(); j++)
+            {
+                ptsToDraw = new List<Point>();
+                for (int i=0; i<sequence.Count(); i++){
+                    ptsToDraw.Add(sequence[i][j]);
+                }
+                this.onDraw(ptsToDraw);
+                //wait 1/frameRate seconds
+                System.Threading.Thread.Sleep(Convert.ToInt32(1/frameRate * 1000));
+            }
+
+        }
+
+        
     }
 }
