@@ -16,24 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		TextFile1.txt = TextFile1.txt
 	EndProjectSection
 EndProject
-Global
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 5
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://cslinux.visualstudio.com/defaultcollection
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = Gestures\u0020(HMM).csproj
-		SccLocalPath1 = .
-		SccProjectUniqueName2 = ..\\..\\..\\..\\..\\Downloads\\sources\\Accord.Statistics\\Accord.Statistics.csproj
-		SccProjectName2 = Accord.Statistics
-		SccLocalPath2 = ..\\..\\..\\..\\..\\Downloads\\sources\\Accord.Statistics
-		SccProjectUniqueName3 = ..\\..\\..\\..\\..\\Downloads\\sources\\Accord.Math\\Accord.Math.csproj
-		SccProjectName3 = Accord.Math
-		SccLocalPath3 = ..\\..\\..\\..\\..\\Downloads\\sources\\Accord.Math
-		SccProjectUniqueName4 = ..\\..\\..\\..\\..\\Downloads\\sources\\Accord.Core\\Accord.Core.csproj
-		SccProjectName4 = Accord.Core
-		SccLocalPath4 = ..\\..\\..\\..\\..\\Downloads\\sources\\Accord.Core
-	EndGlobalSection
+Global	
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
