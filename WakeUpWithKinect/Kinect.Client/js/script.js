@@ -246,7 +246,7 @@ window.onload = function () {
     status.innerHTML = "Connecting to server...";
 
     // Initialize a new web socket.
-    socket = new WebSocket("ws://142.1.5.122:8185");
+    socket = new WebSocket("ws://localhost:8185");
 
     // Connection established.
     socket.onopen = function () {
